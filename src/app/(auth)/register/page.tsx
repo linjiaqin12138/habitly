@@ -38,9 +38,7 @@ export default function RegisterPage() {
       email,
       password,
       options: {
-        // Optional: Add email redirect URL if needed after confirmation,
-        // but Supabase handles the confirmation itself.
-        // emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/login`
       },
     })
 

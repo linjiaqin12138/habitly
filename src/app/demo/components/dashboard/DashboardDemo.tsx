@@ -84,21 +84,23 @@ export function DashboardDemo() {
             ))}
           </div>
         </CardContent>
-      </Card>
-
-      {/* 账户统计卡片 */}
+      </Card>      {/* 小金库卡片 */}
       <Card>
         <CardHeader>
-          <CardTitle>账户概览</CardTitle>
-          <CardDescription>2025年5月5日</CardDescription>
+          <CardTitle>小金库</CardTitle>
+          <CardDescription>2025年6月20日</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary">¥ 280.00</div>
-              <div className="mt-2 text-sm text-muted-foreground">账户余额</div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+          <div className="space-y-16">
+            <div className="grid grid-cols-2 gap-4 gap-y-16 pt-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary">¥ 280.00</div>
+                <div className="mt-1 text-sm text-muted-foreground">当前金额</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">¥ 45.00</div>
+                <div className="mt-1 text-sm text-muted-foreground">可支取奖励</div>
+              </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">72%</div>
                 <div className="text-sm text-muted-foreground">总完成率</div>
@@ -111,7 +113,7 @@ export function DashboardDemo() {
           </div>
         </CardContent>
         <CardFooter className="justify-center">
-          <Button variant="outline">充值</Button>
+          <Button variant="outline">管理小金库</Button>
         </CardFooter>
       </Card>
 

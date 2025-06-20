@@ -14,14 +14,9 @@ import { UserManagementDemo } from "../components/user/UserManagementDemo"; // �
 
 // 定义可用的演示页面
 const demoPages = {
-  "auth": {
-    title: "用户认证界面",
-    description: "现代化的登录、注册和找回密码界面",
-    component: AuthDemo
-  },
   "dashboard": {
     title: "用户仪表盘",
-    description: "展示用户的打卡状态、统计数据和账户信息",
+    description: "展示用户的打卡状态、统计数据和小金库信息",
     component: DashboardDemo
   },
   "checkin": {
