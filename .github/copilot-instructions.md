@@ -16,6 +16,7 @@
 
 我没什么耐性，请输出简练的回答和问题
 
+# FileStructure
 src/app/demo下的内容都是静态页面，用于UI设计而已
 src/lib/services下存放业务逻辑
 src/types下存放模型定义

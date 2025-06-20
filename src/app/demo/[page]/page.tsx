@@ -6,7 +6,7 @@ import { CheckinDemo } from "../components/checkin/CheckinDemo";
 import { MakeupCheckinDemo } from "../components/makeup/MakeupCheckinDemo";
 import { HistoryDemo } from "../components/history/HistoryDemo";
 import { SettingsDemo } from "../components/settings/SettingsDemo";
-import { BalanceDemo } from "../components/settings/BalanceDemo";
+import { VaultDemo } from "../components/vault/VaultDemo";
 import { QuestionnaireDemo } from "../components/questionnaire/QuestionnaireDemo";
 import { QuestionnaireEmoDemo } from "../components/questionnaire/QuestionnaireEmoDemo";
 import { QuestionnaireListDemo } from "../components/questionnaire/QuestionnaireListDemo"; // 新增导入
@@ -48,11 +48,10 @@ const demoPages = {
     title: "个人设置",
     description: "个人信息编辑、头像上传和通知设置",
     component: SettingsDemo
-  },
-  "balance": {
-    title: "余额管理",
-    description: "余额查看、充值、提现和交易记录",
-    component: BalanceDemo
+  },  "vault": {
+    title: "小金库",
+    description: "管理自律投资，记录奖励支取",
+    component: VaultDemo
   },
   "questionnaire": {
     title: "问卷编辑器",
