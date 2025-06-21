@@ -16,9 +16,26 @@
 
 我没什么耐性，请输出简练的回答和问题
 
+请不要添加无关内容
+
 # FileStructure
 src/app/demo下的内容都是静态页面，用于UI设计而已
 src/lib/services下存放业务逻辑
 src/types下存放模型定义
-src\components\ui下的内容是shadcn的组件，不要修改它
-src\components\下其它路径可以存放一些可复用的组件
+src/components/ui下的内容是shadcn的组件，不要修改它
+src/components/下其它路径可以存放一些可复用的组件
+supabase/下放置一些管理在supabase上的代码
+
+# Database
+- 不要设置外键、触发器、supabase函数，这些逻辑要在代码中实现。
+- 数据库字段名用下划线风格，如`user_id`，代码中使用驼峰风格，如`userId`。
+
+# API
+- 采用Restful风格设计
+- error response的响应格式为 HTTP Status Code + { error: string, message: string }, error为内部自定义错误类型
+
+# Other
+及时在doc/notes中创建你的改动笔记，内容包括：
+1. 问题背景
+2. 方案思考
+3. 代码实现

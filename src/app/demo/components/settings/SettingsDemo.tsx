@@ -79,7 +79,7 @@ export function SettingsDemo() {
       </Card>
 
       {/* 通知设置卡片 */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>通知设置</CardTitle>
         </CardHeader>
@@ -103,7 +103,7 @@ export function SettingsDemo() {
             </div>
           </RadioGroup>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* 保存按钮 */}
       <div className="flex justify-end">

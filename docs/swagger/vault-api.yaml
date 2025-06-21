@@ -1,0 +1,384 @@
+openapi: 3.0.3
+info:
+  title: 小金库模块 API
+  description: |
+    用户小金库管理系统API，支持金额设置、奖励发放和消费功能
+    
+    ## 认证方式
+    所有API都通过Supabase SDK进行认证，无需在此文档中配置认证信息。
+    
+    ## 用户信息
+    通过Supabase认证后，可获得以下用户信息：
+    - user.id: 用户唯一标识
+    - user.email: 用户邮箱
+    - user.user_metadata: 用户自定义元数据
+    - user.app_metadata: 应用元数据
+  version: 1.0.0
+  contact:
+    name: HabitTracker Team
+
+servers:
+  - url: /api
+    description: API 基础路径
+
+paths:
+  /vault:
+    get:
+      summary: 获取用户小金库信息
+      description: 获取当前用户的小金库详情和统计摘要
+      tags:
+        - 小金库
+      responses:
+        '200':
+          description: 成功获取小金库信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vault:
+                    $ref: '#/components/schemas/Vault'
+                    nullable: true
+                  summary:
+                    $ref: '#/components/schemas/VaultSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /vault/amount:
+    put:
+      summary: 设置小金库金额
+      description: 设置小金库的总金额（1-10000元）
+      tags:
+        - 小金库
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 1
+                  maximum: 10000
+                  description: 小金库总金额
+                  example: 1000
+      responses:
+        '200':
+          description: 成功设置小金库金额
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vault:
+                    $ref: '#/components/schemas/Vault'
+                  transaction:
+                    $ref: '#/components/schemas/VaultTransaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /vault/spend:
+    post:
+      summary: 消费奖励
+      description: 从可用奖励余额中消费指定金额
+      tags:
+        - 小金库
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  description: 消费金额
+                  example: 50
+                description:
+                  type: string
+                  maxLength: 200
+                  description: 消费描述（可选）
+                  example: "购买奖励商品"
+      responses:
+        '200':
+          description: 成功消费奖励
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vault:
+                    $ref: '#/components/schemas/Vault'
+                  transaction:
+                    $ref: '#/components/schemas/VaultTransaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /vault/transactions:
+    get:
+      summary: 获取交易历史
+      description: 获取用户的小金库交易历史记录
+      tags:
+        - 小金库
+      parameters:
+        - name: type
+          in: query
+          description: 交易类型过滤
+          required: false
+          schema:
+            type: string
+            enum: [adjust, reward, spend]
+            example: reward
+        - name: limit
+          in: query
+          description: 每页记录数
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 20
+        - name: offset
+          in: query
+          description: 跳过记录数
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+      responses:
+        '200':
+          description: 成功获取交易历史
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VaultTransaction'
+                  total:
+                    type: integer
+                    description: 总记录数
+                    example: 150
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Vault:
+      type: object
+      required:
+        - id
+        - userId
+        - totalAmount
+        - availableRewards
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 小金库唯一标识
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        userId:
+          type: string
+          format: uuid
+          description: 用户ID
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        totalAmount:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 10000
+          description: 小金库总金额
+          example: 1000
+        availableRewards:
+          type: number
+          format: float
+          minimum: 0
+          description: 可支配奖励余额
+          example: 250.5
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2025-06-21T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: "2025-06-21T15:45:00Z"
+
+    VaultTransaction:
+      type: object
+      required:
+        - id
+        - userId
+        - vaultId
+        - type
+        - amount
+        - balanceAfter
+        - description
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 交易记录唯一标识
+          example: "550e8400-e29b-41d4-a716-446655440002"
+        userId:
+          type: string
+          format: uuid
+          description: 用户ID
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        vaultId:
+          type: string
+          format: uuid
+          description: 小金库ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        type:
+          type: string
+          enum: [adjust, reward, spend]
+          description: 交易类型（设置金额、奖励发放、奖励消费）
+          example: reward
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          description: 交易金额
+          example: 50
+        balanceAfter:
+          type: number
+          format: float
+          minimum: 0
+          description: 交易后余额
+          example: 300.5
+        description:
+          type: string
+          maxLength: 500
+          description: 交易描述
+          example: "完成7天连续打卡奖励"
+        createdAt:
+          type: string
+          format: date-time
+          description: 交易时间
+          example: "2025-06-21T16:00:00Z"
+
+    VaultSummary:
+      type: object
+      required:
+        - totalTransactions
+        - totalRewards
+        - totalSpent
+      properties:
+        totalTransactions:
+          type: integer
+          minimum: 0
+          description: 总交易次数
+          example: 45
+        totalRewards:
+          type: number
+          format: float
+          minimum: 0
+          description: 累计获得奖励
+          example: 800
+        totalSpent:
+          type: number
+          format: float
+          minimum: 0
+          description: 累计消费金额
+          example: 549.5
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 内部错误类型
+          enum:
+            - VAULT_NOT_FOUND
+            - INVALID_AMOUNT
+            - INSUFFICIENT_BALANCE
+            - AMOUNT_LIMIT_EXCEEDED
+            - VALIDATION_ERROR
+            - INTERNAL_ERROR
+          example: INSUFFICIENT_BALANCE
+        message:
+          type: string
+          description: 用户友好的错误信息
+          example: "可用奖励余额不足"
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidAmount:
+              summary: 金额无效
+              value:
+                error: "INVALID_AMOUNT"
+                message: "金额必须在1-10000元之间"
+            insufficientBalance:
+              summary: 余额不足
+              value:
+                error: "INSUFFICIENT_BALANCE"
+                message: "消费金额不能超过可用奖励余额"
+            amountLimitExceeded:
+              summary: 金额超限
+              value:
+                error: "AMOUNT_LIMIT_EXCEEDED"
+                message: "小金库金额不能超过10000元"
+
+    Unauthorized:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "UNAUTHORIZED"
+            message: "请先登录"
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "服务暂时不可用，请稍后重试"
+
+tags:
+  - name: 小金库
+    description: 用户小金库管理相关接口
