@@ -35,12 +35,13 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - vault
                 properties:
                   vault:
                     $ref: '#/components/schemas/Vault'
-                    nullable: true
-                  summary:
-                    $ref: '#/components/schemas/VaultSummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -83,6 +84,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /vault/spend:
@@ -127,6 +130,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -288,31 +295,6 @@ components:
           description: 交易时间
           example: "2025-06-21T16:00:00Z"
 
-    VaultSummary:
-      type: object
-      required:
-        - totalTransactions
-        - totalRewards
-        - totalSpent
-      properties:
-        totalTransactions:
-          type: integer
-          minimum: 0
-          description: 总交易次数
-          example: 45
-        totalRewards:
-          type: number
-          format: float
-          minimum: 0
-          description: 累计获得奖励
-          example: 800
-        totalSpent:
-          type: number
-          format: float
-          minimum: 0
-          description: 累计消费金额
-          example: 549.5
-
     ErrorResponse:
       type: object
       required:
@@ -327,8 +309,10 @@ components:
             - INVALID_AMOUNT
             - INSUFFICIENT_BALANCE
             - AMOUNT_LIMIT_EXCEEDED
-            - VALIDATION_ERROR
+            - INVALID_REQUEST
             - INTERNAL_ERROR
+            - UNAUTHORIZED
+            - CONFLICT
           example: INSUFFICIENT_BALANCE
         message:
           type: string
@@ -346,19 +330,8 @@ components:
             invalidAmount:
               summary: 金额无效
               value:
-                error: "INVALID_AMOUNT"
+                error: "INVALID_REQUEST"
                 message: "金额必须在1-10000元之间"
-            insufficientBalance:
-              summary: 余额不足
-              value:
-                error: "INSUFFICIENT_BALANCE"
-                message: "消费金额不能超过可用奖励余额"
-            amountLimitExceeded:
-              summary: 金额超限
-              value:
-                error: "AMOUNT_LIMIT_EXCEEDED"
-                message: "小金库金额不能超过10000元"
-
     Unauthorized:
       description: 未授权访问
       content:
@@ -368,6 +341,26 @@ components:
           example:
             error: "UNAUTHORIZED"
             message: "请先登录"
+
+    NotFound:
+      description: 小金库未找到
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "VAULT_NOT_FOUND"
+            message: "用户的小金库尚未创建"
+
+    Conflict:
+      description: 冲突错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "CONFLICT"
+            message: "请求的操作与当前状态冲突"
 
     InternalServerError:
       description: 服务器内部错误

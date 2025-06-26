@@ -18,6 +18,8 @@
 
 请不要添加无关内容
 
+Commit message请使用中文
+
 # FileStructure
 src/app/demo下的内容都是静态页面，用于UI设计而已
 src/lib/services下存放业务逻辑
