@@ -75,7 +75,7 @@
         - **基本信息**: `Input` 编辑标题，`Textarea` 编辑描述，`Input type="time"` 设置提醒时间，`Select` 选择打卡频率（每日/每周/自定义）。
             - **每周**: 使用 `Switch` 组选择星期几。
             - **自定义**: 使用 `Popover` + `Calendar` (mode="multiple") 选择特定日期，用 `Badge` 展示已选日期。
-        - **返现规则**: 使用 `Input type="number"` 设置分数阈值和返现金额，提供添加/删除规则 `Button`。
+        - **奖励规则**: 使用 `Input type="number"` 设置分数阈值和奖励金额，提供添加/删除规则 `Button`。
         - **问题列表**:
             - 使用 `Card` 展示每个问题。
             - `Select` 选择问题类型（单选/多选/填空/评分）。

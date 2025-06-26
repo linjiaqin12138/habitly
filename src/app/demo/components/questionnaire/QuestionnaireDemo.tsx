@@ -54,7 +54,7 @@ interface Question {
 
 interface CashbackRule {
   threshold: number;  // 分数阈值
-  amount: number;     // 返现金额
+  amount: number;     // 奖励金额
 }
 
 interface Questionnaire {
@@ -64,7 +64,7 @@ interface Questionnaire {
   totalScore: number;
   deadline: string;
   frequency: Frequency;
-  cashbackRules: CashbackRule[];  // 新增返现规则数组
+  cashbackRules: CashbackRule[];  // 新增奖励规则数组
 }
 
 const defaultQuestionnaire: Questionnaire = {
@@ -325,16 +325,17 @@ export function QuestionnaireDemo() {
                     </div>
                   </div>
 
-                  {/* 返现规则设置 */}
+                  {/* 奖励规则设置 */}
                   <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right mt-2">返现规则</Label>
+                    <Label className="text-right mt-2">奖励规则</Label>
                     <div className="col-span-3 space-y-4">
                       {questionnaire.cashbackRules.map((rule, index) => (
                         <div key={index} className="flex items-center gap-4">
                           <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="flex items-center gap-2">
-                              <Label>分数阈值</Label>
+                              <Label className="w-full">分数阈值</Label>
                               <Input
+                                className=""
                                 type="number"
                                 min={0}
                                 max={100}
@@ -353,7 +354,7 @@ export function QuestionnaireDemo() {
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <Label>返现金额</Label>
+                              <Label className="w-full">奖励金额</Label>
                               <Input
                                 type="number"
                                 min={0}
@@ -401,7 +402,7 @@ export function QuestionnaireDemo() {
                           });
                         }}
                       >
-                        添加返现规则
+                        添加奖励规则
                       </Button>
                     </div>
                   </div>

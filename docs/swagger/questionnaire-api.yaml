@@ -1,0 +1,646 @@
+openapi: 3.0.3
+info:
+  title: 问卷模块 API
+  description: |
+    用户问卷管理系统API，支持问卷模板管理与打卡记录
+    
+    ## 认证方式
+    所有API都通过Supabase SDK进行认证，无需在此文档中配置认证信息。
+    
+    ## 用户信息
+    通过Supabase认证后，可获得以下用户信息：
+    - user.id: 用户唯一标识
+    - user.email: 用户邮箱
+    - user.user_metadata: 用户自定义元数据
+    - user.app_metadata: 应用元数据
+  version: 1.0.0
+servers:
+  - url: /api
+    description: API 基础路径
+paths:
+  /questionnaire:
+    get:
+      summary: 获取问卷列表
+      description: 获取当前用户的所有问卷模板
+      responses:
+        '200':
+          description: 成功获取问卷列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questionnaires:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Questionnaire'
+              examples:
+                success:
+                  value:
+                    questionnaires:
+                      - id: "1"
+                        userId: "u1"
+                        title: "每日健康打卡"
+                        description: "记录每日健康状况"
+                        questions: []
+                        totalScore: 100
+                        deadline: "23:00"
+                        frequency: { type: "daily" }
+                        cashbackRules: []
+                        createdAt: "2025-06-26T10:00:00Z"
+                        updatedAt: "2025-06-26T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: 新建问卷
+      description: 创建新的问卷模板
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireCreateRequest'
+            examples:
+              create:
+                value:
+                  title: "每日健康打卡"
+                  description: "记录每日健康状况"
+                  questions:
+                    - id: "q1"
+                      type: "single"
+                      title: "今天感觉好吗？"
+                      required: true
+                      options:
+                       - id: "o1"
+                         text: "很好"
+                         score: 10
+                       - id: "o2"
+                         text: "一般"
+                         score: 5
+                       - id: "o3"
+                         text: "不好"
+                         score: 0
+                    - id: "q2"
+                      type: "score"
+                      title: "今天的心情评分"
+                      required: true
+                      maxScore: 10
+                    - id: "q3"
+                      type: "text"
+                      title: "有什么想说的吗？"
+                      required: false
+                  totalScore: 100
+                  deadline: "23:00"
+                  frequency: { type: "daily" }
+                  cashbackRules: []
+      responses:
+        '200':
+          description: 成功创建问卷
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questionnaire:
+                    $ref: '#/components/schemas/Questionnaire'
+              examples:
+                success:
+                  value:
+                    questionnaire:
+                      id: "1"
+                      userId: "u1"
+                      title: "每日健康打卡"
+                      description: "记录每日健康状况"
+                      questions: []
+                      totalScore: 100
+                      deadline: "23:00"
+                      frequency: { type: "daily" }
+                      cashbackRules: []
+                      createdAt: "2025-06-26T10:00:00Z"
+                      updatedAt: "2025-06-26T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /questionnaire/{id}:
+    get:
+      summary: 获取单个问卷
+      description: 获取指定ID的问卷模板
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功获取问卷
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questionnaire:
+                    $ref: '#/components/schemas/Questionnaire'
+              examples:
+                   success:
+                     value:
+                      questionnaire:
+                        id: "1"
+                        userId: "u1"
+                        title: "每日健康打卡"
+                        description: "记录每日健康状况"
+                        questions:
+                          - id: "q1"
+                            type: "single"
+                            title: "今天感觉好吗？"
+                            required: true
+                            options:
+                              - id: "o1"
+                                text: "很好"
+                                score: 10
+                              - id: "o2"
+                                text: "一般"
+                                score: 5
+                              - id: "o3"
+                                text: "不好"
+                                score: 0
+                              - id: "q2"
+                                type: "score"
+                                title: "今天的心情评分"
+                                required: true
+                                maxScore: 10
+                                totalScore: 100
+                        deadline: "23:00"
+                        frequency: { type: "daily" }
+                        cashbackRules:
+                          - threshold: 90
+                            amount: 1.0
+                          - threshold: 60
+                            amount: 0.5
+                        createdAt: "2025-06-26T10:00:00Z"
+                        updatedAt: "2025-06-26T10:00:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      summary: 编辑问卷
+      description: 编辑指定ID的问卷模板
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireUpdateRequest'
+            examples:
+              update:
+                value:
+                  title: "健康打卡（更新）"
+                  description: "更新描述"
+      responses:
+        '200':
+          description: 成功编辑问卷
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questionnaire:
+                    $ref: '#/components/schemas/Questionnaire'
+              examples:
+                success:
+                  value:
+                    questionnaire:
+                      id: "1"
+                      userId: "u1"
+                      title: "健康打卡（更新）"
+                      description: "更新描述"
+                      questions: []
+                      totalScore: 100
+                      deadline: "23:00"
+                      frequency: { type: "daily" }
+                      cashbackRules: []
+                      createdAt: "2025-06-26T10:00:00Z"
+                      updatedAt: "2025-06-26T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: 删除问卷
+      description: 删除指定ID的问卷模板
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功删除问卷
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /questionnaire/{id}/response:
+    post:
+      summary: 提交打卡
+      description: 提交问卷打卡记录
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireResponseCreateRequest'
+            examples:
+              submit:
+                value:
+                  answers:
+                    q1: "a1"
+                    q2: ["a2", "a3"]
+                    q3: "填空答案"
+                    q4: 5
+                  isMakeup: false
+      responses:
+        '200':
+          description: 成功提交打卡
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    $ref: '#/components/schemas/QuestionnaireResponse'
+              examples:
+                success:
+                  value:
+                    response:
+                      id: "r1"
+                      userId: "u1"
+                      questionnaireId: "1"
+                      answers:
+                        q1: "a1"
+                        q2: ["a2", "a3"]
+                        q3: "填空答案"
+                        q4: 5
+                      score: 90
+                      submittedAt: "2025-06-26T13:00:00Z"
+                      isMakeup: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /questionnaire/{id}/responses:
+    get:
+      summary: 获取打卡历史
+      description: 获取指定问卷的打卡历史记录
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: 成功获取打卡历史
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  responses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuestionnaireResponse'
+                  total:
+                    type: integer
+              examples:
+                success:
+                  value:
+                    responses:
+                      - id: "r1"
+                        userId: "u1"
+                        questionnaireId: "1"
+                        answers:
+                          q1: "a1"
+                          q2: ["a2", "a3"]
+                          q3: "填空答案"
+                          q4: 5
+                        score: 90
+                        submittedAt: "2025-06-26T13:00:00Z"
+                        isMakeup: false
+                    total: 1
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    Questionnaire:
+      type: object
+      required:
+        - id
+        - userId
+        - title
+        - description
+        - questions
+        - totalScore
+        - deadline
+        - frequency
+        - cashbackRules
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        totalScore:
+          type: integer
+        deadline:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        cashbackRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CashbackRule'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+    Question:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - required
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [single, multiple, text, score]
+        title:
+          type: string
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+        maxScore:
+          type: integer
+    Option:
+      type: object
+      required:
+        - id
+        - text
+        - score
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        score:
+          type: integer
+    Frequency:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [daily, weekly, custom]
+        weeklyDays:
+          type: array
+          items:
+            type: integer
+        customDates:
+          type: array
+          items:
+            type: string
+    CashbackRule:
+      type: object
+      required:
+        - threshold
+        - amount
+      properties:
+        threshold:
+          type: integer
+        amount:
+          type: number
+    QuestionnaireResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - questionnaireId
+        - answers
+        - score
+        - submittedAt
+        - isMakeup
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        questionnaireId:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnswerValue'
+        score:
+          type: integer
+        submittedAt:
+          type: string
+        isMakeup:
+          type: boolean
+        makeupReason:
+          type: string
+    AnswerValue:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+        - type: integer
+    QuestionnaireCreateRequest:
+      type: object
+      required:
+        - title
+        - description
+        - questions
+        - totalScore
+        - deadline
+        - frequency
+        - cashbackRules
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        totalScore:
+          type: integer
+        deadline:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        cashbackRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CashbackRule'
+    QuestionnaireUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        totalScore:
+          type: integer
+        deadline:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        cashbackRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CashbackRule'
+    QuestionnaireResponseCreateRequest:
+      type: object
+      required:
+        - answers
+      properties:
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnswerValue'
+        isMakeup:
+          type: boolean
+        makeupReason:
+          type: string
+    QuestionnaireErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - UNAUTHORIZED
+            - NOT_FOUND
+            - BAD_REQUEST
+            - INTERNAL_ERROR
+        message:
+          type: string
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/QuestionnaireErrorResponse'
+          examples:
+            invalid:
+              value:
+                error: "VALIDATION_ERROR"
+                message: "参数校验失败"
+    Unauthorized:
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/QuestionnaireErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error: "UNAUTHORIZED"
+                message: "请先登录"
+    NotFound:
+      description: 资源未找到
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/QuestionnaireErrorResponse'
+          examples:
+            notfound:
+              value:
+                error: "NOT_FOUND"
+                message: "问卷不存在"
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/QuestionnaireErrorResponse'
+          examples:
+            error:
+              value:
+                error: "INTERNAL_ERROR"
+                message: "服务暂时不可用，请稍后重试"

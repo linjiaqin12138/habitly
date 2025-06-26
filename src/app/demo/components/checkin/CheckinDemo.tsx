@@ -33,7 +33,7 @@ const mockQuestionnaire = [
   },
 ];
 
-// 模拟返现规则数据
+// 模拟奖励规则数据
 const mockCashbackRules = [
   { threshold: 5, amount: 5 },
   { threshold: 10, amount: 10 },
@@ -70,7 +70,7 @@ export function CheckinDemo() {
   };
 
   const calculateCashback = (score: number) => {
-    // 找到最高的达标返现规则
+    // 找到最高的达标奖励规则
     const eligibleRules = mockCashbackRules
       .filter(rule => score >= rule.threshold)
       .sort((a, b) => b.amount - a.amount);
@@ -183,7 +183,7 @@ export function CheckinDemo() {
                   <div className="text-2xl font-bold text-green-500">
                     +¥{cashbackAmount}
                   </div>
-                  <div className="text-sm text-gray-500">获得返现</div>
+                  <div className="text-sm text-gray-500">获得奖励</div>
                 </div>
               )}
               <div className="text-center text-sm text-gray-500">
