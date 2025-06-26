@@ -93,7 +93,6 @@ export function QuestionnaireEmoDemo() {
   // 处理问卷完成
   const alertResults = (sender: any) => {
     const results = sender.data;
-    console.log("情绪记录结果:", results);
   };
 
   // 创建问卷编辑器选项
