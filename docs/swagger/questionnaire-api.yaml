@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: 问卷模块 API
   description: |
-    用户问卷管理系统API，支持问卷模板管理与打卡记录
+    用户问卷管理系统API，支持问卷模板管理与填写记录
     
     ## 认证方式
     所有API都通过Supabase SDK进行认证，无需在此文档中配置认证信息。
@@ -40,13 +40,10 @@ paths:
                     questionnaires:
                       - id: "1"
                         userId: "u1"
-                        title: "每日健康打卡"
+                        title: "每日健康问卷"
                         description: "记录每日健康状况"
                         questions: []
                         totalScore: 100
-                        deadline: "23:00"
-                        frequency: { type: "daily" }
-                        cashbackRules: []
                         createdAt: "2025-06-26T10:00:00Z"
                         updatedAt: "2025-06-26T10:00:00Z"
         '401':
@@ -65,7 +62,7 @@ paths:
             examples:
               create:
                 value:
-                  title: "每日健康打卡"
+                  title: "每日健康问卷"
                   description: "记录每日健康状况"
                   questions:
                     - id: "q1"
@@ -92,9 +89,6 @@ paths:
                       title: "有什么想说的吗？"
                       required: false
                   totalScore: 100
-                  deadline: "23:00"
-                  frequency: { type: "daily" }
-                  cashbackRules: []
       responses:
         '200':
           description: 成功创建问卷
@@ -111,13 +105,10 @@ paths:
                     questionnaire:
                       id: "1"
                       userId: "u1"
-                      title: "每日健康打卡"
+                      title: "每日健康问卷"
                       description: "记录每日健康状况"
                       questions: []
                       totalScore: 100
-                      deadline: "23:00"
-                      frequency: { type: "daily" }
-                      cashbackRules: []
                       createdAt: "2025-06-26T10:00:00Z"
                       updatedAt: "2025-06-26T10:00:00Z"
         '400':
@@ -152,7 +143,7 @@ paths:
                       questionnaire:
                         id: "1"
                         userId: "u1"
-                        title: "每日健康打卡"
+                        title: "每日健康问卷"
                         description: "记录每日健康状况"
                         questions:
                           - id: "q1"
@@ -169,19 +160,12 @@ paths:
                               - id: "o3"
                                 text: "不好"
                                 score: 0
-                              - id: "q2"
-                                type: "score"
-                                title: "今天的心情评分"
-                                required: true
-                                maxScore: 10
-                                totalScore: 100
-                        deadline: "23:00"
-                        frequency: { type: "daily" }
-                        cashbackRules:
-                          - threshold: 90
-                            amount: 1.0
-                          - threshold: 60
-                            amount: 0.5
+                          - id: "q2"
+                            type: "score"
+                            title: "今天的心情评分"
+                            required: true
+                            maxScore: 10
+                        totalScore: 100
                         createdAt: "2025-06-26T10:00:00Z"
                         updatedAt: "2025-06-26T10:00:00Z"
         '404':
@@ -208,7 +192,7 @@ paths:
             examples:
               update:
                 value:
-                  title: "健康打卡（更新）"
+                  title: "健康问卷（更新）"
                   description: "更新描述"
       responses:
         '200':
@@ -226,13 +210,10 @@ paths:
                     questionnaire:
                       id: "1"
                       userId: "u1"
-                      title: "健康打卡（更新）"
+                      title: "健康问卷（更新）"
                       description: "更新描述"
                       questions: []
                       totalScore: 100
-                      deadline: "23:00"
-                      frequency: { type: "daily" }
-                      cashbackRules: []
                       createdAt: "2025-06-26T10:00:00Z"
                       updatedAt: "2025-06-26T12:00:00Z"
         '400':
@@ -263,8 +244,8 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /questionnaire/{id}/response:
     post:
-      summary: 提交打卡
-      description: 提交问卷打卡记录
+      summary: 提交问卷填写
+      description: 提交问卷填写记录
       parameters:
         - name: id
           in: path
@@ -285,10 +266,9 @@ paths:
                     q2: ["a2", "a3"]
                     q3: "填空答案"
                     q4: 5
-                  isMakeup: false
       responses:
         '200':
-          description: 成功提交打卡
+          description: 成功提交问卷填写
           content:
             application/json:
               schema:
@@ -310,7 +290,6 @@ paths:
                         q4: 5
                       score: 90
                       submittedAt: "2025-06-26T13:00:00Z"
-                      isMakeup: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -321,8 +300,8 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /questionnaire/{id}/responses:
     get:
-      summary: 获取打卡历史
-      description: 获取指定问卷的打卡历史记录
+      summary: 获取问卷填写历史
+      description: 获取指定问卷的填写历史记录
       parameters:
         - name: id
           in: path
@@ -346,7 +325,7 @@ paths:
             default: 0
       responses:
         '200':
-          description: 成功获取打卡历史
+          description: 成功获取问卷填写历史
           content:
             application/json:
               schema:
@@ -372,7 +351,6 @@ paths:
                           q4: 5
                         score: 90
                         submittedAt: "2025-06-26T13:00:00Z"
-                        isMakeup: false
                     total: 1
         '404':
           $ref: '#/components/responses/NotFound'
@@ -391,9 +369,6 @@ components:
         - description
         - questions
         - totalScore
-        - deadline
-        - frequency
-        - cashbackRules
         - createdAt
         - updatedAt
       properties:
@@ -411,14 +386,6 @@ components:
             $ref: '#/components/schemas/Question'
         totalScore:
           type: integer
-        deadline:
-          type: string
-        frequency:
-          $ref: '#/components/schemas/Frequency'
-        cashbackRules:
-          type: array
-          items:
-            $ref: '#/components/schemas/CashbackRule'
         createdAt:
           type: string
         updatedAt:
@@ -459,32 +426,6 @@ components:
           type: string
         score:
           type: integer
-    Frequency:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          enum: [daily, weekly, custom]
-        weeklyDays:
-          type: array
-          items:
-            type: integer
-        customDates:
-          type: array
-          items:
-            type: string
-    CashbackRule:
-      type: object
-      required:
-        - threshold
-        - amount
-      properties:
-        threshold:
-          type: integer
-        amount:
-          type: number
     QuestionnaireResponse:
       type: object
       required:
@@ -494,7 +435,6 @@ components:
         - answers
         - score
         - submittedAt
-        - isMakeup
       properties:
         id:
           type: string
@@ -510,10 +450,6 @@ components:
           type: integer
         submittedAt:
           type: string
-        isMakeup:
-          type: boolean
-        makeupReason:
-          type: string
     AnswerValue:
       oneOf:
         - type: string
@@ -528,9 +464,6 @@ components:
         - description
         - questions
         - totalScore
-        - deadline
-        - frequency
-        - cashbackRules
       properties:
         title:
           type: string
@@ -542,14 +475,6 @@ components:
             $ref: '#/components/schemas/Question'
         totalScore:
           type: integer
-        deadline:
-          type: string
-        frequency:
-          $ref: '#/components/schemas/Frequency'
-        cashbackRules:
-          type: array
-          items:
-            $ref: '#/components/schemas/CashbackRule'
     QuestionnaireUpdateRequest:
       type: object
       properties:
@@ -563,14 +488,6 @@ components:
             $ref: '#/components/schemas/Question'
         totalScore:
           type: integer
-        deadline:
-          type: string
-        frequency:
-          $ref: '#/components/schemas/Frequency'
-        cashbackRules:
-          type: array
-          items:
-            $ref: '#/components/schemas/CashbackRule'
     QuestionnaireResponseCreateRequest:
       type: object
       required:
@@ -580,10 +497,6 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/AnswerValue'
-        isMakeup:
-          type: boolean
-        makeupReason:
-          type: string
     QuestionnaireErrorResponse:
       type: object
       required:
