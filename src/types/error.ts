@@ -1,4 +1,3 @@
-
 export class AppError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -16,5 +15,12 @@ export const enum GeneralErrorCode {
     BAD_REQUEST = 'BAD_REQUEST',
     CONFLICT = 'CONFLICT',
     SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE'
+}
+
+export const enum CheckinErrorCode {
+    PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND',
+    QUESTIONNAIRE_ERROR = 'QUESTIONNAIRE_ERROR', 
+    ALREADY_CHECKED_IN = 'ALREADY_CHECKED_IN',
+    INVALID_CHECKIN_DATE = 'INVALID_CHECKIN_DATE'
 }
 

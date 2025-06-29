@@ -1,0 +1,885 @@
+openapi: 3.0.3
+info:
+  title: 打卡模块 API
+  description: |
+    用户打卡管理系统API，支持打卡配置管理、打卡提交和打卡记录查询
+    
+    ## 认证方式
+    所有API都通过Supabase SDK进行认证，无需在此文档中配置认证信息。
+    
+    ## 用户信息
+    通过Supabase认证后，可获得以下用户信息：
+    - user.id: 用户唯一标识
+    - user.email: 用户邮箱
+    - user.user_metadata: 用户自定义元数据
+    - user.app_metadata: 应用元数据
+    
+    ## 功能概述
+    - 创建打卡配置时会自动创建关联问卷
+    - 打卡通过填写问卷完成，系统自动计算得分和奖励
+    - 支持补救打卡功能
+    - 根据得分阈值自动发放奖励到小金库
+  version: 1.0.0
+  contact:
+    name: HabitTracker Team
+
+servers:
+  - url: /api
+    description: API 基础路径
+
+paths:
+  /checkin/profile:
+    get:
+      summary: 获取打卡配置列表
+      description: 获取当前用户的所有打卡配置
+      tags:
+        - 打卡配置
+      responses:
+        '200':
+          description: 成功获取打卡配置列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CheckinProfile'
+              examples:
+                success:
+                  value:
+                    profiles:
+                      - id: "cp1"
+                        userId: "u1"
+                        questionnaireId: "q1"
+                        title: "每日健康打卡"
+                        description: "记录每日健康状况"
+                        frequency:
+                          type: "daily"
+                        reminderTime: "09:00"
+                        rewardRules:
+                          - threshold: 80
+                            amount: 5
+                          - threshold: 90
+                            amount: 10
+                        isActive: true
+                        createdAt: "2025-06-29T10:00:00Z"
+                        updatedAt: "2025-06-29T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      summary: 创建打卡配置
+      description: 创建新的打卡配置，同时自动创建关联问卷
+      tags:
+        - 打卡配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinProfileCreateRequest'
+            examples:
+              create:
+                value:
+                  title: "每日健康打卡"
+                  description: "记录每日健康状况"
+                  frequency:
+                    type: "daily"
+                  reminderTime: "09:00"
+                  rewardRules:
+                    - threshold: 80
+                      amount: 5
+                    - threshold: 90
+                      amount: 10
+                  questionnaire:
+                    title: "每日健康问卷"
+                    description: "记录每日健康状况"
+                    questions:
+                      - id: "q1"
+                        type: "single"
+                        title: "今天感觉好吗？"
+                        required: true
+                        options:
+                          - id: "o1"
+                            text: "很好"
+                            score: 10
+                          - id: "o2"
+                            text: "一般"
+                            score: 5
+                          - id: "o3"
+                            text: "不好"
+                            score: 0
+                      - id: "q2"
+                        type: "score"
+                        title: "今天的心情评分"
+                        required: true
+                        maxScore: 10
+                    totalScore: 100
+      responses:
+        '200':
+          description: 成功创建打卡配置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/CheckinProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkin/profile/{id}:
+    get:
+      summary: 获取单个打卡配置
+      description: 获取指定ID的打卡配置详情
+      tags:
+        - 打卡配置
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 打卡配置ID
+      responses:
+        '200':
+          description: 成功获取打卡配置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/CheckinProfile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      summary: 更新打卡配置
+      description: 更新指定ID的打卡配置，同时更新关联问卷
+      tags:
+        - 打卡配置
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 打卡配置ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinProfileUpdateRequest'
+      responses:
+        '200':
+          description: 成功更新打卡配置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/CheckinProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      summary: 删除打卡配置
+      description: 删除指定ID的打卡配置，同时删除关联问卷和打卡记录
+      tags:
+        - 打卡配置
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 打卡配置ID
+      responses:
+        '200':
+          description: 成功删除打卡配置
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkin/submit:
+    post:
+      summary: 提交打卡
+      description: 提交当日打卡，通过填写问卷完成
+      tags:
+        - 打卡操作
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinSubmitRequest'
+            examples:
+              submit:
+                value:
+                  profileId: "cp1"
+                  answers:
+                    q1: "o1"
+                    q2: 8
+                    q3: "今天感觉很好"
+      responses:
+        '200':
+          description: 成功提交打卡
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    $ref: '#/components/schemas/CheckinRecord'
+              examples:
+                success:
+                  value:
+                    record:
+                      id: "cr1"
+                      userId: "u1"
+                      profileId: "cp1"
+                      questionnaireResponseId: "qr1"
+                      checkinDate: "2025-06-29"
+                      score: 90
+                      rewardAmount: 10
+                      isRemedial: false
+                      createdAt: "2025-06-29T15:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkin/remedial:
+    post:
+      summary: 提交补救打卡
+      description: 为指定日期提交补救打卡
+      tags:
+        - 打卡操作
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinRemedialRequest'
+            examples:
+              remedial:
+                value:
+                  profileId: "cp1"
+                  answers:
+                    q1: "o2"
+                    q2: 6
+                    q3: "昨天忘记打卡了"
+                  checkinDate: "2025-06-28"
+      responses:
+        '200':
+          description: 成功提交补救打卡
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    $ref: '#/components/schemas/CheckinRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkin/records:
+    get:
+      summary: 获取打卡记录
+      description: 获取用户的打卡记录列表
+      tags:
+        - 打卡记录
+      parameters:
+        - name: profileId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: 打卡配置ID过滤
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: 开始日期 (YYYY-MM-DD)
+          example: "2025-06-01"
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: 结束日期 (YYYY-MM-DD)
+          example: "2025-06-30"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: 每页记录数
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 跳过记录数
+      responses:
+        '200':
+          description: 成功获取打卡记录
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CheckinRecord'
+                  total:
+                    type: integer
+                    description: 总记录数
+              examples:
+                success:
+                  value:
+                    records:
+                      - id: "cr1"
+                        userId: "u1"
+                        profileId: "cp1"
+                        questionnaireResponseId: "qr1"
+                        checkinDate: "2025-06-29"
+                        score: 90
+                        rewardAmount: 10
+                        isRemedial: false
+                        createdAt: "2025-06-29T15:30:00Z"
+                    total: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkin/missing-dates:
+    get:
+      summary: 获取缺卡日期
+      description: 获取指定天数内可以补救的缺卡日期列表
+      tags:
+        - 打卡记录
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 打卡配置ID
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: 查询最近多少天的缺卡情况
+      responses:
+        '200':
+          description: 成功获取缺卡日期
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  missingDates:
+                    type: array
+                    items:
+                      type: string
+                      format: date
+                    description: 可补救的缺卡日期列表
+              examples:
+                success:
+                  value:
+                    missingDates:
+                      - "2025-06-27"
+                      - "2025-06-25"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    CheckinProfile:
+      type: object
+      required:
+        - id
+        - userId
+        - questionnaireId
+        - title
+        - description
+        - frequency
+        - rewardRules
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 打卡配置ID
+        userId:
+          type: string
+          format: uuid
+          description: 用户ID
+        questionnaireId:
+          type: string
+          format: uuid
+          description: 关联问卷ID
+        title:
+          type: string
+          maxLength: 255
+          description: 打卡标题
+        description:
+          type: string
+          description: 打卡描述
+        frequency:
+          $ref: '#/components/schemas/CheckinFrequency'
+        reminderTime:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: 提醒时间 (HH:mm格式)
+          example: "09:00"
+        rewardRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckinRewardRule'
+          description: 奖励规则列表
+        isActive:
+          type: boolean
+          description: 是否启用
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    CheckinFrequency:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [daily, weekly, custom]
+          description: 频率类型
+        weeklyDays:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          description: 每周打卡天数 (0-6，周日到周六)
+          example: [1, 2, 3, 4, 5]
+        customDates:
+          type: array
+          items:
+            type: string
+            format: date
+          description: 自定义打卡日期 (YYYY-MM-DD格式)
+          example: ["2025-06-29", "2025-06-30"]
+
+    CheckinRewardRule:
+      type: object
+      required:
+        - threshold
+        - amount
+      properties:
+        threshold:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 分数阈值
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          description: 奖励金额
+
+    CheckinRecord:
+      type: object
+      required:
+        - id
+        - userId
+        - profileId
+        - questionnaireResponseId
+        - checkinDate
+        - score
+        - rewardAmount
+        - isRemedial
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 记录ID
+        userId:
+          type: string
+          format: uuid
+          description: 用户ID
+        profileId:
+          type: string
+          format: uuid
+          description: 打卡配置ID
+        questionnaireResponseId:
+          type: string
+          format: uuid
+          description: 关联问卷填写记录ID
+        checkinDate:
+          type: string
+          format: date
+          description: 打卡日期 (YYYY-MM-DD)
+        score:
+          type: integer
+          minimum: 0
+          description: 得分
+        rewardAmount:
+          type: number
+          format: float
+          minimum: 0
+          description: 获得奖励金额
+        isRemedial:
+          type: boolean
+          description: 是否为补救打卡
+        createdAt:
+          type: string
+          format: date-time
+          description: 打卡时间
+
+    CheckinProfileCreateRequest:
+      type: object
+      required:
+        - title
+        - description
+        - frequency
+        - rewardRules
+        - questionnaire
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          description: 打卡标题
+        description:
+          type: string
+          description: 打卡描述
+        frequency:
+          $ref: '#/components/schemas/CheckinFrequency'
+        reminderTime:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: 提醒时间 (HH:mm格式)
+        rewardRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckinRewardRule'
+          description: 奖励规则列表
+        questionnaire:
+          type: object
+          required:
+            - title
+            - description
+            - questions
+            - totalScore
+          properties:
+            title:
+              type: string
+              description: 问卷标题
+            description:
+              type: string
+              description: 问卷描述
+            questions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+              description: 问题列表
+            totalScore:
+              type: integer
+              minimum: 1
+              description: 问卷总分
+
+    CheckinProfileUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          description: 打卡标题
+        description:
+          type: string
+          description: 打卡描述
+        frequency:
+          $ref: '#/components/schemas/CheckinFrequency'
+        reminderTime:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: 提醒时间 (HH:mm格式)
+        rewardRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckinRewardRule'
+          description: 奖励规则列表
+        questionnaire:
+          type: object
+          properties:
+            title:
+              type: string
+              description: 问卷标题
+            description:
+              type: string
+              description: 问卷描述
+            questions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+              description: 问题列表
+            totalScore:
+              type: integer
+              minimum: 1
+              description: 问卷总分
+
+    CheckinSubmitRequest:
+      type: object
+      required:
+        - profileId
+        - answers
+      properties:
+        profileId:
+          type: string
+          format: uuid
+          description: 打卡配置ID
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnswerValue'
+          description: 问卷答案
+
+    CheckinRemedialRequest:
+      type: object
+      required:
+        - profileId
+        - answers
+        - checkinDate
+      properties:
+        profileId:
+          type: string
+          format: uuid
+          description: 打卡配置ID
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnswerValue'
+          description: 问卷答案
+        checkinDate:
+          type: string
+          format: date
+          description: 补救打卡的日期 (YYYY-MM-DD)
+
+    Question:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - required
+      properties:
+        id:
+          type: string
+          description: 问题ID
+        type:
+          type: string
+          enum: [single, multiple, text, score]
+          description: 问题类型
+        title:
+          type: string
+          description: 问题标题
+        required:
+          type: boolean
+          description: 是否必填
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+          description: 选择题选项
+        maxScore:
+          type: integer
+          minimum: 1
+          description: 评分题最高分
+
+    Option:
+      type: object
+      required:
+        - id
+        - text
+        - score
+      properties:
+        id:
+          type: string
+          description: 选项ID
+        text:
+          type: string
+          description: 选项文本
+        score:
+          type: integer
+          description: 选项分值
+
+    AnswerValue:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+        - type: integer
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 内部错误类型
+          enum:
+            - PROFILE_NOT_FOUND
+            - QUESTIONNAIRE_ERROR
+            - ALREADY_CHECKED_IN
+            - INVALID_CHECKIN_DATE
+            - INVALID_REQUEST
+            - INTERNAL_ERROR
+            - UNAUTHORIZED
+            - CONFLICT
+        message:
+          type: string
+          description: 用户友好的错误信息
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidRequest:
+              summary: 参数验证失败
+              value:
+                error: "INVALID_REQUEST"
+                message: "请求参数不符合要求"
+
+    Unauthorized:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "UNAUTHORIZED"
+            message: "请先登录"
+
+    NotFound:
+      description: 资源未找到
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            profileNotFound:
+              summary: 打卡配置未找到
+              value:
+                error: "PROFILE_NOT_FOUND"
+                message: "打卡配置不存在"
+
+    Conflict:
+      description: 冲突错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            alreadyCheckedIn:
+              summary: 已经打过卡
+              value:
+                error: "ALREADY_CHECKED_IN"
+                message: "今日已经打过卡了"
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "服务暂时不可用，请稍后重试"
+
+tags:
+  - name: 打卡配置
+    description: 打卡配置管理相关接口
+  - name: 打卡操作
+    description: 打卡提交相关接口
+  - name: 打卡记录
+    description: 打卡记录查询相关接口
