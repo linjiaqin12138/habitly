@@ -7,7 +7,7 @@ import { MakeupCheckinDemo } from "../components/makeup/MakeupCheckinDemo";
 import { HistoryDemo } from "../components/history/HistoryDemo";
 import { SettingsDemo } from "../components/settings/SettingsDemo";
 import { VaultDemo } from "../components/vault/VaultDemo";
-import { QuestionnaireDemo } from "../components/questionnaire/QuestionnaireDemo";
+import { CheckinDemo as CheckinConfigDemo } from "../components/questionnaire/QuestionnaireDemo";
 import { QuestionnaireEmoDemo } from "../components/questionnaire/QuestionnaireEmoDemo";
 import { QuestionnaireListDemo } from "../components/questionnaire/QuestionnaireListDemo"; // 新增导入
 import { UserManagementDemo } from "../components/user/UserManagementDemo"; // 新增导入
@@ -49,9 +49,9 @@ const demoPages = {
     component: VaultDemo
   },
   "questionnaire": {
-    title: "问卷编辑器",
-    description: "创建和编辑打卡问卷模板",
-    component: QuestionnaireDemo
+    title: "打卡配置管理",
+    description: "创建和编辑打卡配置及关联问卷",
+    component: CheckinConfigDemo
   },
   "questionnairev2": {
     title: "问卷编辑器v2",

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { CheckinService } from '@/lib/services/checkinService';
+import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
-
-const checkinService = new CheckinService();
 
 const QuestionSchema = z.object({
   id: z.string(),
@@ -56,7 +54,7 @@ const CreateCheckinProfileSchema = z.object({
 
 export const GET = withErrorHandling(
   withAuth(async ({ user }) => {
-    const profiles = await checkinService.getProfiles(user.id);
+    const profiles = await checkinService.getCheckinProfiles(user.id);
     return NextResponse.json({ profiles });
   })
 );
@@ -66,11 +64,11 @@ export const POST = withErrorHandling(
     const body = await req.json();
     const parse = CreateCheckinProfileSchema.safeParse(body);
     if (!parse.success) {
-      throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message}`);
+      throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message} ${body}`);
     }
 
     try {
-      const profile = await checkinService.createProfile(user.id, parse.data);
+      const profile = await checkinService.createCheckinProfile(user.id, parse.data);
       return NextResponse.json({ profile });
     } catch (error: any) {
       if (error.message.includes('问卷')) {

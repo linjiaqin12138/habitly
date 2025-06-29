@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { CheckinService } from '@/lib/services/checkinService';
+import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode } from '@/types/error';
-
-const checkinService = new CheckinService();
 
 const GetRecordsSchema = z.object({
   profileId: z.string().uuid().optional(),
@@ -32,7 +30,7 @@ export const GET = withErrorHandling(
       throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message}`);
     }
 
-    const result = await checkinService.getRecords(user.id, parse.data);
+    const result = await checkinService.getCheckinRecords(user.id, parse.data);
     return NextResponse.json(result);
   })
 );

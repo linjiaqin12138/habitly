@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { CheckinService } from '@/lib/services/checkinService';
+import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
-
-const checkinService = new CheckinService();
 
 const QuestionSchema = z.object({
   id: z.string(),
@@ -49,7 +47,7 @@ export const GET = withErrorHandling(
   withAuth(async ({ user, context }) => {
     const { id } = context.params;
     
-    const profile = await checkinService.getProfile(user.id, id);
+    const profile = await checkinService.getCheckinProfile(user.id, id);
     if (!profile) {
       throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, '打卡配置不存在');
     }
@@ -65,11 +63,11 @@ export const PUT = withErrorHandling(
     
     const parse = UpdateCheckinProfileSchema.safeParse(body);
     if (!parse.success) {
-      throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message}`);
+      throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message} ${JSON.stringify(body, undefined, 2)}`);
     }
 
     try {
-      const profile = await checkinService.updateProfile(user.id, id, parse.data);
+      const profile = await checkinService.updateCheckinProfile(user.id, id, parse.data);
       return NextResponse.json({ profile });
     } catch (error: any) {
       if (error.message.includes('不存在')) {
@@ -88,7 +86,7 @@ export const DELETE = withErrorHandling(
     const { id } = context.params;
     
     try {
-      await checkinService.deleteProfile(user.id, id);
+      await checkinService.deleteCheckinProfile(user.id, id);
       return NextResponse.json({ success: true });
     } catch (error: any) {
       if (error.message.includes('不存在')) {

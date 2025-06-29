@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { CheckinService } from '@/lib/services/checkinService';
+import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
-
-const checkinService = new CheckinService();
 
 const AnswerValueSchema = z.union([
   z.string(),

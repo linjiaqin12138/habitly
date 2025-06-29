@@ -37,13 +37,8 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { 
-  getQuestionnaireList, 
-  createQuestionnaire, 
-  updateQuestionnaire, 
-  deleteQuestionnaire 
-} from "@/lib/services/questionnaireService";
-import { Questionnaire as ApiQuestionnaire } from "@/types/questionnaire";
+import { CheckinProfile, CheckinProfileCreateRequest } from "@/types/checkin";
+import { Question, Option } from "@/types/questionnaire";
 
 type FrequencyType = "daily" | "weekly" | "custom";
 
@@ -53,88 +48,36 @@ interface Frequency {
   customDates?: string[]; // ISO 格式的日期字符串数组
 }
 
-type QuestionType = "single" | "multiple" | "text" | "score";
-
-interface Option {
-  id: string;
-  text: string;
-  score: number;
-}
-
-interface Question {
-  id: string;
-  type: QuestionType;
-  title: string;
-  required: boolean;
-  options?: Option[];
-  maxScore?: number;
-}
-
-interface CashbackRule {
+interface RewardRule {
   threshold: number;  // 分数阈值
   amount: number;     // 奖励金额
 }
 
-interface Questionnaire {
+interface CheckinProfileForm {
   id?: string; // 添加id字段用于区分新建还是编辑
   title: string;
   description: string;
-  questions: Question[];
-  totalScore: number;
-  deadline: string;
   frequency: Frequency;
-  cashbackRules: CashbackRule[];  // 新增奖励规则数组
+  reminderTime?: string;
+  rewardRules: RewardRule[];
+  questionnaire: {
+    title: string;
+    description: string;
+    questions: Question[];
+    totalScore: number;
+  };
 }
 
-const defaultQuestionnaire: Questionnaire = {
-  title: "每日习惯打卡问卷",
+const defaultCheckinProfile: CheckinProfileForm = {
+  title: "每日习惯打卡",
   description: "记录你的每日习惯完成情况",
-  questions: [
-    {
-      id: "q1",
-      type: "single",
-      title: "今天的学习计划是否完成？",
-      required: true,
-      options: [
-        { id: "o1", text: "完全完成", score: 10 },
-        { id: "o2", text: "部分完成", score: 5 },
-        { id: "o3", text: "未完成", score: 0 },
-      ],
-    },
-    {
-      id: "q2",
-      type: "multiple",
-      title: "今天完成了哪些运动？",
-      required: false,
-      options: [
-        { id: "o1", text: "跑步", score: 3 },
-        { id: "o2", text: "健身", score: 3 },
-        { id: "o3", text: "瑜伽", score: 2 },
-        { id: "o4", text: "游泳", score: 4 },
-      ],
-    },
-    {
-      id: "q3",
-      type: "text",
-      title: "今天的收获和感想是什么？",
-      required: true,
-    },
-    {
-      id: "q4",
-      type: "score",
-      title: "今天的整体表现评分",
-      required: true,
-      maxScore: 10,
-    },
-  ],
-  totalScore: 100,
-  deadline: "22:00",
   frequency: {
     type: "daily",
     weeklyDays: [],
     customDates: [],
   },
-  cashbackRules: [
+  reminderTime: "09:00",
+  rewardRules: [
     {
       threshold: 80,
       amount: 5,
@@ -144,12 +87,55 @@ const defaultQuestionnaire: Questionnaire = {
       amount: 10,
     }
   ],
+  questionnaire: {
+    title: "每日习惯打卡问卷",
+    description: "记录你的每日习惯完成情况",
+    totalScore: 100,
+    questions: [
+      {
+        id: "q1",
+        type: "single",
+        title: "今天的学习计划是否完成？",
+        required: true,
+        options: [
+          { id: "o1", text: "完全完成", score: 10 },
+          { id: "o2", text: "部分完成", score: 5 },
+          { id: "o3", text: "未完成", score: 0 },
+        ],
+      },
+      {
+        id: "q2",
+        type: "multiple",
+        title: "今天完成了哪些运动？",
+        required: false,
+        options: [
+          { id: "o1", text: "跑步", score: 3 },
+          { id: "o2", text: "健身", score: 3 },
+          { id: "o3", text: "瑜伽", score: 2 },
+          { id: "o4", text: "游泳", score: 4 },
+        ],
+      },
+      {
+        id: "q3",
+        type: "text",
+        title: "今天的收获和感想是什么？",
+        required: true,
+      },
+      {
+        id: "q4",
+        type: "score",
+        title: "今天的整体表现评分",
+        required: true,
+        maxScore: 10,
+      },
+    ],
+  },
 };
 
-export function QuestionnaireDemo() {
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire>(defaultQuestionnaire);
+export function CheckinDemo() {
+  const [checkinProfile, setCheckinProfile] = useState<CheckinProfileForm>(defaultCheckinProfile);
   const [currentAnswer, setCurrentAnswer] = useState<Record<string, any>>({});
-  const [questionnaireList, setQuestionnaireList] = useState<ApiQuestionnaire[]>([]);
+  const [checkinProfileList, setCheckinProfileList] = useState<CheckinProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -157,7 +143,7 @@ export function QuestionnaireDemo() {
   const calculateCurrentScore = (): number => {
     let totalScore = 0;
     
-    questionnaire.questions.forEach((question) => {
+    checkinProfile.questionnaire.questions.forEach((question) => {
       const answer = currentAnswer[question.id];
       
       if (!answer) return; // 没有回答则跳过
@@ -200,45 +186,50 @@ export function QuestionnaireDemo() {
     return totalScore;
   };
 
-  // 页面加载时获取问卷列表
+  // 页面加载时获取打卡配置列表
   useEffect(() => {
-    loadQuestionnaireList();
+    loadCheckinProfileList();
   }, []);
 
-  const loadQuestionnaireList = async () => {
+  const loadCheckinProfileList = async () => {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch('/api/questionnaire');
+      const response = await fetch('/api/checkin/profile');
       if (!response.ok) {
-        throw new Error('获取问卷列表失败');
+        throw new Error('获取打卡配置列表失败');
       }
       const data = await response.json();
-      setQuestionnaireList(data.questionnaires || []);
+      setCheckinProfileList(data.profiles || []);
       
-      // 如果有问卷，加载第一个
-      if (data.questionnaires && data.questionnaires.length > 0) {
-        const firstQuestionnaire = data.questionnaires[0];
-        setQuestionnaire({
-          id: firstQuestionnaire.id,
-          title: firstQuestionnaire.title,
-          description: firstQuestionnaire.description,
-          questions: firstQuestionnaire.questions,
-          totalScore: firstQuestionnaire.totalScore,
-          deadline: "22:00", // 保持默认值，因为API暂不支持
-          frequency: {
-            type: "daily",
-            weeklyDays: [],
-            customDates: [],
-          }, // 保持默认值，因为API暂不支持
-          cashbackRules: [
-            { threshold: 80, amount: 5 },
-            { threshold: 90, amount: 10 }
-          ], // 保持默认值，因为API暂不支持
-        });
+      // 如果有打卡配置，加载第一个
+      if (data.profiles && data.profiles.length > 0) {
+        const firstProfile = data.profiles[0];
+        
+        // 获取关联的问卷信息
+        const questionnaireResponse = await fetch(`/api/questionnaire/${firstProfile.questionnaireId}`);
+        if (questionnaireResponse.ok) {
+          const questionnaireData = await questionnaireResponse.json();
+          const questionnaire = questionnaireData.questionnaire;
+          
+          setCheckinProfile({
+            id: firstProfile.id,
+            title: firstProfile.title,
+            description: firstProfile.description,
+            frequency: firstProfile.frequency,
+            reminderTime: firstProfile.reminderTime,
+            rewardRules: firstProfile.rewardRules,
+            questionnaire: {
+              title: questionnaire.title,
+              description: questionnaire.description,
+              questions: questionnaire.questions,
+              totalScore: questionnaire.totalScore,
+            },
+          });
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取问卷列表失败');
+      setError(err instanceof Error ? err.message : '获取打卡配置列表失败');
     } finally {
       setLoading(false);
     }
@@ -251,23 +242,25 @@ export function QuestionnaireDemo() {
     }));
   };
 
-  const handleSaveQuestionnaire = async () => {
+  const handleSaveCheckinProfile = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // 准备API数据（只包含API支持的字段）
-      const apiData = {
-        title: questionnaire.title,
-        description: questionnaire.description,
-        questions: questionnaire.questions,
-        totalScore: questionnaire.totalScore,
+      // 准备API数据
+      const apiData: CheckinProfileCreateRequest = {
+        title: checkinProfile.title,
+        description: checkinProfile.description,
+        frequency: checkinProfile.frequency,
+        reminderTime: checkinProfile.reminderTime,
+        rewardRules: checkinProfile.rewardRules,
+        questionnaire: checkinProfile.questionnaire,
       };
 
       let response;
-      if (questionnaire.id) {
-        // 更新现有问卷
-        response = await fetch(`/api/questionnaire/${questionnaire.id}`, {
+      if (checkinProfile.id) {
+        // 更新现有打卡配置
+        response = await fetch(`/api/checkin/profile/${checkinProfile.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -275,8 +268,8 @@ export function QuestionnaireDemo() {
           body: JSON.stringify(apiData),
         });
       } else {
-        // 创建新问卷
-        response = await fetch('/api/questionnaire', {
+        // 创建新打卡配置
+        response = await fetch('/api/checkin/profile', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -287,68 +280,68 @@ export function QuestionnaireDemo() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || '保存问卷失败');
+        throw new Error(errorData.message || '保存打卡配置失败');
       }
 
       const data = await response.json();
-      const savedQuestionnaire = data.questionnaire;
+      const savedProfile = data.profile;
 
-      // 更新当前编辑的问卷ID
-      setQuestionnaire(prev => ({
+      // 更新当前编辑的打卡配置ID
+      setCheckinProfile(prev => ({
         ...prev,
-        id: savedQuestionnaire.id,
+        id: savedProfile.id,
       }));
 
-      // 重新加载问卷列表
-      await loadQuestionnaireList();
+      // 重新加载打卡配置列表
+      await loadCheckinProfileList();
 
-      alert("问卷已保存！");
+      alert("打卡配置已保存！");
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存问卷失败');
+      setError(err instanceof Error ? err.message : '保存打卡配置失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteQuestionnaire = async () => {
-    if (!questionnaire.id) return;
+  const handleDeleteCheckinProfile = async () => {
+    if (!checkinProfile.id) return;
 
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`/api/questionnaire/${questionnaire.id}`, {
+      const response = await fetch(`/api/checkin/profile/${checkinProfile.id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || '删除问卷失败');
+        throw new Error(errorData.message || '删除打卡配置失败');
       }
 
       // 重置为默认状态
-      setQuestionnaire(defaultQuestionnaire);
+      setCheckinProfile(defaultCheckinProfile);
       
-      // 重新加载问卷列表
-      await loadQuestionnaireList();
+      // 重新加载打卡配置列表
+      await loadCheckinProfileList();
 
-      alert("问卷已删除！");
+      alert("打卡配置已删除！");
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除问卷失败');
+      setError(err instanceof Error ? err.message : '删除打卡配置失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetQuestionnaire = () => {
-    setQuestionnaire(defaultQuestionnaire);
+  const handleResetCheckinProfile = () => {
+    setCheckinProfile(defaultCheckinProfile);
   };
 
   return (
     <div className="w-full max-w-[1200px] space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>问卷管理</CardTitle>
+          <CardTitle>打卡配置管理</CardTitle>
           {error && (
             <div className="text-red-500 text-sm">{error}</div>
           )}
@@ -356,7 +349,7 @@ export function QuestionnaireDemo() {
         <CardContent className="p-6">
           <Tabs defaultValue="edit" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="edit">编辑问卷</TabsTrigger>
+              <TabsTrigger value="edit">编辑配置</TabsTrigger>
               <TabsTrigger value="preview">预览效果</TabsTrigger>
             </TabsList>
 
@@ -368,50 +361,50 @@ export function QuestionnaireDemo() {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="title" className="text-right">标题</Label>
+                    <Label htmlFor="title" className="text-right">打卡标题</Label>
                     <Input
                       id="title"
-                      value={questionnaire.title}
-                      onChange={(e) => setQuestionnaire({
-                        ...questionnaire,
+                      value={checkinProfile.title}
+                      onChange={(e) => setCheckinProfile({
+                        ...checkinProfile,
                         title: e.target.value,
                       })}
                       className="col-span-3"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">描述</Label>
+                    <Label htmlFor="description" className="text-right">打卡描述</Label>
                     <Textarea
                       id="description"
-                      value={questionnaire.description}
-                      onChange={(e) => setQuestionnaire({
-                        ...questionnaire,
+                      value={checkinProfile.description}
+                      onChange={(e) => setCheckinProfile({
+                        ...checkinProfile,
                         description: e.target.value,
                       })}
                       className="col-span-3"
                     />
                   </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="reminderTime" className="text-right">提醒打卡时间</Label>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="reminderTime" className="text-right">提醒时间</Label>
                     <Input
                       id="reminderTime"
                       type="time"
-                      value={questionnaire.deadline}
-                      onChange={(e) => setQuestionnaire({
-                      ...questionnaire,
-                      deadline: e.target.value,
+                      value={checkinProfile.reminderTime}
+                      onChange={(e) => setCheckinProfile({
+                        ...checkinProfile,
+                        reminderTime: e.target.value,
                       })}
                       className="col-span-3"
                     />
-                    </div>
+                  </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="frequency" className="text-right">打卡频率</Label>
                     <div className="col-span-3 space-y-4">
                       <Select
-                        value={questionnaire.frequency.type}
+                        value={checkinProfile.frequency.type}
                         onValueChange={(value: FrequencyType) => {
-                          setQuestionnaire({
-                            ...questionnaire,
+                          setCheckinProfile({
+                            ...checkinProfile,
                             frequency: {
                               type: value,
                               weeklyDays: value === "weekly" ? [] : undefined,
@@ -430,21 +423,21 @@ export function QuestionnaireDemo() {
                         </SelectContent>
                       </Select>
 
-                      {questionnaire.frequency.type === "weekly" && (
+                      {checkinProfile.frequency.type === "weekly" && (
                         <div className="space-y-2">
                           <div className="grid grid-cols-4 gap-2">
                             {[0, 1, 2, 3, 4, 5, 6].map((day) => (
                               <div key={day} className="flex items-center space-x-2">
                                 <Switch
-                                  checked={questionnaire.frequency.weeklyDays?.includes(day) || false}
+                                  checked={checkinProfile.frequency.weeklyDays?.includes(day) || false}
                                   onCheckedChange={(checked) => {
-                                    setQuestionnaire({
-                                      ...questionnaire,
+                                    setCheckinProfile({
+                                      ...checkinProfile,
                                       frequency: {
-                                        ...questionnaire.frequency,
+                                        ...checkinProfile.frequency,
                                         weeklyDays: checked
-                                          ? [...(questionnaire.frequency.weeklyDays || []), day]
-                                          : (questionnaire.frequency.weeklyDays || []).filter((d) => d !== day),
+                                          ? [...(checkinProfile.frequency.weeklyDays || []), day]
+                                          : (checkinProfile.frequency.weeklyDays || []).filter((d) => d !== day),
                                       },
                                     });
                                   }}
@@ -464,7 +457,7 @@ export function QuestionnaireDemo() {
                         </div>
                       )}
 
-                      {questionnaire.frequency.type === "custom" && (
+                      {checkinProfile.frequency.type === "custom" && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right">选择日期</Label>
@@ -476,20 +469,20 @@ export function QuestionnaireDemo() {
                                     className="w-full justify-start text-left font-normal"
                                   >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {questionnaire.frequency.customDates?.length 
-                                      ? `已选择 ${questionnaire.frequency.customDates.length} 个日期`
+                                    {checkinProfile.frequency.customDates?.length 
+                                      ? `已选择 ${checkinProfile.frequency.customDates.length} 个日期`
                                       : "选择打卡日期"}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                   <Calendar
                                     mode="multiple"
-                                    selected={questionnaire.frequency.customDates?.map(date => new Date(date))}
+                                    selected={checkinProfile.frequency.customDates?.map(date => new Date(date))}
                                     onSelect={(dates) => {
-                                      setQuestionnaire({
-                                        ...questionnaire,
+                                      setCheckinProfile({
+                                        ...checkinProfile,
                                         frequency: {
-                                          ...questionnaire.frequency,
+                                          ...checkinProfile.frequency,
                                           customDates: dates ? dates.map(date => format(date, 'yyyy-MM-dd')) : [],
                                         },
                                       });
@@ -501,11 +494,11 @@ export function QuestionnaireDemo() {
                               </Popover>
                             </div>
                           </div>
-                          {questionnaire.frequency.customDates && questionnaire.frequency.customDates.length > 0 && (
+                          {checkinProfile.frequency.customDates && checkinProfile.frequency.customDates.length > 0 && (
                             <div className="grid grid-cols-4 gap-4">
                               <div className="text-right text-sm text-muted-foreground">已选日期：</div>
                               <div className="col-span-3 flex flex-wrap gap-2">
-                                {questionnaire.frequency.customDates.sort().map((date) => (
+                                {checkinProfile.frequency.customDates.sort().map((date) => (
                                   <Badge key={date} variant="secondary">
                                     {format(new Date(date), 'yyyy-MM-dd')}
                                     <Button
@@ -513,11 +506,11 @@ export function QuestionnaireDemo() {
                                       size="icon"
                                       className="h-4 w-4 ml-1 p-0"
                                       onClick={() => {
-                                        setQuestionnaire({
-                                          ...questionnaire,
+                                        setCheckinProfile({
+                                          ...checkinProfile,
                                           frequency: {
-                                            ...questionnaire.frequency,
-                                            customDates: questionnaire.frequency.customDates?.filter(d => d !== date),
+                                            ...checkinProfile.frequency,
+                                            customDates: checkinProfile.frequency.customDates?.filter(d => d !== date),
                                           },
                                         });
                                       }}
@@ -538,7 +531,7 @@ export function QuestionnaireDemo() {
                   <div className="grid grid-cols-4 items-start gap-4">
                     <Label className="text-right mt-2">奖励规则</Label>
                     <div className="col-span-3 space-y-4">
-                      {questionnaire.cashbackRules.map((rule, index) => (
+                      {checkinProfile.rewardRules.map((rule, index) => (
                         <div key={index} className="flex items-center gap-4">
                           <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="flex items-center gap-2">
@@ -550,14 +543,14 @@ export function QuestionnaireDemo() {
                                 max={100}
                                 value={rule.threshold}
                                 onChange={(e) => {
-                                  const newRules = [...questionnaire.cashbackRules];
+                                  const newRules = [...checkinProfile.rewardRules];
                                   newRules[index] = {
                                     ...rule,
                                     threshold: parseInt(e.target.value) || 0,
                                   };
-                                  setQuestionnaire({
-                                    ...questionnaire,
-                                    cashbackRules: newRules,
+                                  setCheckinProfile({
+                                    ...checkinProfile,
+                                    rewardRules: newRules,
                                   });
                                 }}
                               />
@@ -569,14 +562,14 @@ export function QuestionnaireDemo() {
                                 min={0}
                                 value={rule.amount}
                                 onChange={(e) => {
-                                  const newRules = [...questionnaire.cashbackRules];
+                                  const newRules = [...checkinProfile.rewardRules];
                                   newRules[index] = {
                                     ...rule,
                                     amount: parseInt(e.target.value) || 0,
                                   };
-                                  setQuestionnaire({
-                                    ...questionnaire,
-                                    cashbackRules: newRules,
+                                  setCheckinProfile({
+                                    ...checkinProfile,
+                                    rewardRules: newRules,
                                   });
                                 }}
                               />
@@ -586,11 +579,11 @@ export function QuestionnaireDemo() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newRules = [...questionnaire.cashbackRules];
+                              const newRules = [...checkinProfile.rewardRules];
                               newRules.splice(index, 1);
-                              setQuestionnaire({
-                                ...questionnaire,
-                                cashbackRules: newRules,
+                              setCheckinProfile({
+                                ...checkinProfile,
+                                rewardRules: newRules,
                               });
                             }}
                           >
@@ -602,10 +595,10 @@ export function QuestionnaireDemo() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setQuestionnaire({
-                            ...questionnaire,
-                            cashbackRules: [
-                              ...questionnaire.cashbackRules,
+                          setCheckinProfile({
+                            ...checkinProfile,
+                            rewardRules: [
+                              ...checkinProfile.rewardRules,
                               { threshold: 80, amount: 5 },
                             ],
                           });
@@ -618,6 +611,46 @@ export function QuestionnaireDemo() {
                 </CardContent>
               </Card>
 
+              {/* 问卷配置卡片 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>问卷配置</CardTitle>
+                  <CardDescription>配置打卡时需要填写的问卷内容</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="questionnaireTitle" className="text-right">问卷标题</Label>
+                    <Input
+                      id="questionnaireTitle"
+                      value={checkinProfile.questionnaire.title}
+                      onChange={(e) => setCheckinProfile({
+                        ...checkinProfile,
+                        questionnaire: {
+                          ...checkinProfile.questionnaire,
+                          title: e.target.value,
+                        },
+                      })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="questionnaireDescription" className="text-right">问卷描述</Label>
+                    <Textarea
+                      id="questionnaireDescription"
+                      value={checkinProfile.questionnaire.description}
+                      onChange={(e) => setCheckinProfile({
+                        ...checkinProfile,
+                        questionnaire: {
+                          ...checkinProfile.questionnaire,
+                          description: e.target.value,
+                        },
+                      })}
+                      className="col-span-3"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* 问题列表卡片 */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -625,7 +658,7 @@ export function QuestionnaireDemo() {
                   <Button 
                     onClick={() => {
                       const newQuestion: Question = {
-                        id: `q${questionnaire.questions.length + 1}`,
+                        id: `q${checkinProfile.questionnaire.questions.length + 1}`,
                         type: "single",
                         title: "新问题",
                         required: true,
@@ -633,9 +666,12 @@ export function QuestionnaireDemo() {
                           { id: "o1", text: "选项1", score: 0 },
                         ],
                       };
-                      setQuestionnaire({
-                        ...questionnaire,
-                        questions: [...questionnaire.questions, newQuestion],
+                      setCheckinProfile({
+                        ...checkinProfile,
+                        questionnaire: {
+                          ...checkinProfile.questionnaire,
+                          questions: [...checkinProfile.questionnaire.questions, newQuestion],
+                        },
                       });
                     }}
                     size="sm"
@@ -644,7 +680,7 @@ export function QuestionnaireDemo() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {questionnaire.questions.map((question, index) => (
+                  {checkinProfile.questionnaire.questions.map((question, index) => (
                     <Card key={question.id}>
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
@@ -653,11 +689,14 @@ export function QuestionnaireDemo() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newQuestions = [...questionnaire.questions];
+                              const newQuestions = [...checkinProfile.questionnaire.questions];
                               newQuestions.splice(index, 1);
-                              setQuestionnaire({
-                                ...questionnaire,
-                                questions: newQuestions,
+                              setCheckinProfile({
+                                ...checkinProfile,
+                                questionnaire: {
+                                  ...checkinProfile.questionnaire,
+                                  questions: newQuestions,
+                                },
                               });
                             }}
                           >
@@ -670,8 +709,8 @@ export function QuestionnaireDemo() {
                           <Label className="text-right">类型</Label>
                           <Select
                             value={question.type}
-                            onValueChange={(value: QuestionType) => {
-                              const newQuestions = [...questionnaire.questions];
+                            onValueChange={(value: "single" | "multiple" | "text" | "score") => {
+                              const newQuestions = [...checkinProfile.questionnaire.questions];
                               newQuestions[index] = {
                                 ...question,
                                 type: value,
@@ -679,9 +718,12 @@ export function QuestionnaireDemo() {
                                   ? [{ id: "o1", text: "选项1", score: 0 }]
                                   : undefined,
                               };
-                              setQuestionnaire({
-                                ...questionnaire,
-                                questions: newQuestions,
+                              setCheckinProfile({
+                                ...checkinProfile,
+                                questionnaire: {
+                                  ...checkinProfile.questionnaire,
+                                  questions: newQuestions,
+                                },
                               });
                             }}
                           >
@@ -702,14 +744,17 @@ export function QuestionnaireDemo() {
                           <Input
                             value={question.title}
                             onChange={(e) => {
-                              const newQuestions = [...questionnaire.questions];
+                              const newQuestions = [...checkinProfile.questionnaire.questions];
                               newQuestions[index] = {
                                 ...question,
                                 title: e.target.value,
                               };
-                              setQuestionnaire({
-                                ...questionnaire,
-                                questions: newQuestions,
+                              setCheckinProfile({
+                                ...checkinProfile,
+                                questionnaire: {
+                                  ...checkinProfile.questionnaire,
+                                  questions: newQuestions,
+                                },
                               });
                             }}
                             className="col-span-3"
@@ -722,14 +767,17 @@ export function QuestionnaireDemo() {
                             <Switch
                               checked={question.required}
                               onCheckedChange={(checked) => {
-                                const newQuestions = [...questionnaire.questions];
+                                const newQuestions = [...checkinProfile.questionnaire.questions];
                                 newQuestions[index] = {
                                   ...question,
                                   required: checked,
                                 };
-                                setQuestionnaire({
-                                  ...questionnaire,
-                                  questions: newQuestions,
+                                setCheckinProfile({
+                                  ...checkinProfile,
+                                  questionnaire: {
+                                    ...checkinProfile.questionnaire,
+                                    questions: newQuestions,
+                                  },
                                 });
                               }}
                             />
@@ -744,7 +792,7 @@ export function QuestionnaireDemo() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  const newQuestions = [...questionnaire.questions];
+                                  const newQuestions = [...checkinProfile.questionnaire.questions];
                                   const newOption = {
                                     id: `o${(question.options?.length || 0) + 1}`,
                                     text: `选项${(question.options?.length || 0) + 1}`,
@@ -754,9 +802,12 @@ export function QuestionnaireDemo() {
                                     ...question,
                                     options: [...(question.options || []), newOption],
                                   };
-                                  setQuestionnaire({
-                                    ...questionnaire,
-                                    questions: newQuestions,
+                                  setCheckinProfile({
+                                    ...checkinProfile,
+                                    questionnaire: {
+                                      ...checkinProfile.questionnaire,
+                                      questions: newQuestions,
+                                    },
                                   });
                                 }}
                                 className="col-span-3"
@@ -773,7 +824,7 @@ export function QuestionnaireDemo() {
                                   <Input
                                     value={option.text}
                                     onChange={(e) => {
-                                      const newQuestions = [...questionnaire.questions];
+                                      const newQuestions = [...checkinProfile.questionnaire.questions];
                                       const newOptions = [...(question.options || [])];
                                       newOptions[optionIndex] = {
                                         ...option,
@@ -783,9 +834,12 @@ export function QuestionnaireDemo() {
                                         ...question,
                                         options: newOptions,
                                       };
-                                      setQuestionnaire({
-                                        ...questionnaire,
-                                        questions: newQuestions,
+                                      setCheckinProfile({
+                                        ...checkinProfile,
+                                        questionnaire: {
+                                          ...checkinProfile.questionnaire,
+                                          questions: newQuestions,
+                                        },
                                       });
                                     }}
                                     className="flex-1"
@@ -794,7 +848,7 @@ export function QuestionnaireDemo() {
                                     type="number"
                                     value={option.score}
                                     onChange={(e) => {
-                                      const newQuestions = [...questionnaire.questions];
+                                      const newQuestions = [...checkinProfile.questionnaire.questions];
                                       const newOptions = [...(question.options || [])];
                                       newOptions[optionIndex] = {
                                         ...option,
@@ -804,9 +858,12 @@ export function QuestionnaireDemo() {
                                         ...question,
                                         options: newOptions,
                                       };
-                                      setQuestionnaire({
-                                        ...questionnaire,
-                                        questions: newQuestions,
+                                      setCheckinProfile({
+                                        ...checkinProfile,
+                                        questionnaire: {
+                                          ...checkinProfile.questionnaire,
+                                          questions: newQuestions,
+                                        },
                                       });
                                     }}
                                     className="w-20"
@@ -816,16 +873,19 @@ export function QuestionnaireDemo() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      const newQuestions = [...questionnaire.questions];
+                                      const newQuestions = [...checkinProfile.questionnaire.questions];
                                       const newOptions = [...(question.options || [])];
                                       newOptions.splice(optionIndex, 1);
                                       newQuestions[index] = {
                                         ...question,
                                         options: newOptions,
                                       };
-                                      setQuestionnaire({
-                                        ...questionnaire,
-                                        questions: newQuestions,
+                                      setCheckinProfile({
+                                        ...checkinProfile,
+                                        questionnaire: {
+                                          ...checkinProfile.questionnaire,
+                                          questions: newQuestions,
+                                        },
                                       });
                                     }}
                                   >
@@ -844,14 +904,17 @@ export function QuestionnaireDemo() {
                               type="number"
                               value={question.maxScore}
                               onChange={(e) => {
-                                const newQuestions = [...questionnaire.questions];
+                                const newQuestions = [...checkinProfile.questionnaire.questions];
                                 newQuestions[index] = {
                                   ...question,
                                   maxScore: parseInt(e.target.value) || 10,
                                 };
-                                setQuestionnaire({
-                                  ...questionnaire,
-                                  questions: newQuestions,
+                                setCheckinProfile({
+                                  ...checkinProfile,
+                                  questionnaire: {
+                                    ...checkinProfile.questionnaire,
+                                    questions: newQuestions,
+                                  },
                                 });
                               }}
                               className="col-span-3"
@@ -870,13 +933,13 @@ export function QuestionnaireDemo() {
                   <div className="flex justify-end space-x-4">
                     <Button 
                       variant="outline" 
-                      onClick={handleResetQuestionnaire}
+                      onClick={handleResetCheckinProfile}
                       disabled={loading}
                     >
                       重置
                     </Button>
                     
-                    {questionnaire.id && (
+                    {checkinProfile.id && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button 
@@ -884,19 +947,19 @@ export function QuestionnaireDemo() {
                             disabled={loading}
                           >
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            删除问卷
+                            删除配置
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                              确定要删除问卷"{questionnaire.title}"吗？此操作无法撤销。
+                              确定要删除打卡配置"{checkinProfile.title}"吗？此操作无法撤销，同时会删除关联的问卷和打卡记录。
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>取消</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteQuestionnaire}>
+                            <AlertDialogAction onClick={handleDeleteCheckinProfile}>
                               删除
                             </AlertDialogAction>
                           </AlertDialogFooter>
@@ -905,11 +968,11 @@ export function QuestionnaireDemo() {
                     )}
                     
                     <Button 
-                      onClick={handleSaveQuestionnaire}
+                      onClick={handleSaveCheckinProfile}
                       disabled={loading}
                     >
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {questionnaire.id ? "更新问卷" : "保存问卷"}
+                      {checkinProfile.id ? "更新配置" : "保存配置"}
                     </Button>
                   </div>
                 </CardContent>
@@ -919,11 +982,20 @@ export function QuestionnaireDemo() {
             <TabsContent value="preview" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>{questionnaire.title}</CardTitle>
+                  <CardTitle>{checkinProfile.title}</CardTitle>
                   <CardDescription>
-                    {questionnaire.description}
-                    <div className="mt-1">
-                      截止时间：{questionnaire.deadline}
+                    {checkinProfile.description}
+                    <div className="mt-2 flex flex-wrap gap-2 text-sm">
+                      <Badge variant="outline">
+                        频率: {checkinProfile.frequency.type === "daily" && "每日"}
+                        {checkinProfile.frequency.type === "weekly" && "每周"}
+                        {checkinProfile.frequency.type === "custom" && "自定义"}
+                      </Badge>
+                      {checkinProfile.reminderTime && (
+                        <Badge variant="outline">
+                          提醒: {checkinProfile.reminderTime}
+                        </Badge>
+                      )}
                     </div>
                   </CardDescription>
                 </CardHeader>
@@ -934,15 +1006,15 @@ export function QuestionnaireDemo() {
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">当前分数</CardTitle>
                         <div className="text-2xl font-bold text-primary">
-                          {calculateCurrentScore()}/{questionnaire.totalScore}
+                          {calculateCurrentScore()}/{checkinProfile.questionnaire.totalScore}
                         </div>
                       </div>
                       {/* 奖励规则显示 */}
-                      {questionnaire.cashbackRules.length > 0 && (
+                      {checkinProfile.rewardRules.length > 0 && (
                         <div className="space-y-2">
                           <div className="text-sm text-muted-foreground">奖励规则：</div>
                           <div className="flex flex-wrap gap-2">
-                            {questionnaire.cashbackRules
+                            {checkinProfile.rewardRules
                               .sort((a, b) => a.threshold - b.threshold)
                               .map((rule, index) => {
                                 const currentScore = calculateCurrentScore();
@@ -964,7 +1036,7 @@ export function QuestionnaireDemo() {
                     </CardHeader>
                   </Card>
 
-                  {questionnaire.questions.map((question, index) => (
+                  {checkinProfile.questionnaire.questions.map((question, index) => (
                     <div key={question.id} className="space-y-2">
                       <Label>
                         {index + 1}. {question.title}
@@ -1041,6 +1113,9 @@ export function QuestionnaireDemo() {
                     <Button variant="outline" onClick={() => setCurrentAnswer({})}>
                       重置
                     </Button>
+                    <Badge variant="outline" className="px-3 py-1">
+                      预览模式 - 不支持实际提交
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
