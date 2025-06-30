@@ -9,26 +9,8 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-
-interface Vault {
-  id: string;
-  userId: string;
-  totalAmount: number;
-  availableRewards: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface VaultTransaction {
-  id: string;
-  userId: string;
-  vaultId: string;
-  type: "adjust" | "reward" | "spend";
-  amount: number;
-  balanceAfter: number;
-  description: string;
-  createdAt: string;
-}
+import { Vault, VaultTransaction } from "@/types/vault";
+import { getVault, getVaultTransactions, setVaultAmount, spendReward } from "@/lib/api/vaultApi";
 
 export default function VaultPage() {
   const [vault, setVault] = useState<Vault | null>(null);
@@ -45,15 +27,12 @@ export default function VaultPage() {
   const fetchVaultAndTransactions = async () => {
     setLoading(true);
     try {
-      const [vaultRes, txRes] = await Promise.all([
-        fetch("/api/vault").then(r => r.json()),
-        fetch("/api/vault/transactions?limit=50").then(r => r.json()),
+      const [vaultData, transactionData] = await Promise.all([
+        getVault(),
+        getVaultTransactions(50),
       ]);
-      if (vaultRes.error) throw new Error(vaultRes.message || "获取小金库失败");
-      setVault({
-        ...vaultRes.vault,
-      });
-      setTransactions(txRes.transactions || []);
+      setVault(vaultData.vault);
+      setTransactions(transactionData.transactions || []);
     } catch (e: any) {
       setVault(null);
       setTransactions([]);
@@ -65,7 +44,6 @@ export default function VaultPage() {
 
   useEffect(() => {
     fetchVaultAndTransactions();
-    // eslint-disable-next-line
   }, []);
 
   // 过滤交易记录
@@ -82,13 +60,7 @@ export default function VaultPage() {
     }
     setProcessingAction(true);
     try {
-      const res = await fetch("/api/vault/amount", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "设置失败");
+      await setVaultAmount(amount);
       toast.success("小金库金额设置成功！");
       setShowSetAmountDialog(false);
       setNewAmount("");
@@ -113,13 +85,7 @@ export default function VaultPage() {
     }
     setProcessingAction(true);
     try {
-      const res = await fetch("/api/vault/spend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, description: spendDescription }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "消费失败");
+      await spendReward(amount, spendDescription);
       toast.success("奖励消费成功！");
       setShowSpendDialog(false);
       setSpendAmount("");
@@ -134,7 +100,7 @@ export default function VaultPage() {
 
   return (
     <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10 pb-20">
-      <div className="w-full max-w-[1200px] space-y-6">
+      <div className="w-full max-w-[1200px] space-y-6 px-8">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-2xl font-bold mb-2">小金库</h1>
           <p className="text-gray-500">管理自律投资，记录奖励支取</p>

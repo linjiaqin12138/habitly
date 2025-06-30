@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { CheckinProfileForm } from "./types";
+import { calculateTotalScore } from "@/lib/utils/calcTotalScore";
 
 interface CheckinProfilePreviewProps {
   checkinProfile: CheckinProfileForm;
@@ -13,24 +14,6 @@ interface CheckinProfilePreviewProps {
 
 export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewProps) {
   const [currentAnswer, setCurrentAnswer] = useState<Record<string, any>>({});
-
-  // 计算总分数
-  const calculateTotalScore = (): number => {
-    let totalScore = 0;
-    checkinProfile.questionnaire.questions.forEach((question) => {
-      if (question.type === "score") {
-        totalScore += question.maxScore!;
-      } else if (question.type === "multiple") {
-        const options = question.options || [];
-        totalScore += options.reduce((sum, option) => sum + option.score, 0);
-      } else if (question.type === "single") {
-        const options = question.options || [];
-        const maxOption = options.reduce((max, option) => option.score > max.score ? option : max, { id: "", text: "", score: 0 });
-        totalScore += maxOption.score;
-      }
-    });
-    return totalScore;
-  };
 
   // 计算当前分数
   const calculateCurrentScore = (): number => {
@@ -109,7 +92,7 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">当前分数</CardTitle>
               <div className="text-2xl font-bold text-primary">
-                {calculateCurrentScore()}/{calculateTotalScore()}
+                {calculateCurrentScore()}/{calculateTotalScore(checkinProfile.questionnaire.questions)}
               </div>
             </div>
             {/* 奖励规则显示 */}

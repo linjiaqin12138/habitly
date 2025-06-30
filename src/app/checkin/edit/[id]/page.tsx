@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { CheckinProfileUpdateRequest } from "@/types/checkin";
 import { toast } from "sonner";
 import assert from "assert";
 import { CheckinProfileForm } from "@/components/checkin/CheckinProfileForm";
 import { CheckinProfileForm as CheckinProfileFormType } from "@/components/checkin/types";
+import { getCheckinProfile, updateCheckinProfile, deleteCheckinProfile } from "@/lib/api/checkinApi";
+import { getQuestionnaire } from "@/lib/api/questionnaireApi";
+import { calculateTotalScore } from "@/lib/utils/calcTotalScore";
 
 export default function CheckinEditPage() {
   const router = useRouter();
@@ -20,25 +22,6 @@ export default function CheckinEditPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const calculateTotalScore = (): number => {
-    if (!checkinProfile) return 0;
-    
-    let totalScore = 0;
-    checkinProfile.questionnaire.questions.forEach((question) => {
-      if (question.type === "score") {
-        totalScore += question.maxScore!;
-      } else if (question.type === "multiple") {
-        const options = question.options || [];
-        totalScore += options.reduce((sum, option) => sum + option.score, 0);
-      } else if (question.type === "single") {
-        const options = question.options || [];
-        const maxOption = options.reduce((max, option) => option.score > max.score ? option : max, { id: "", text: "", score: 0 });
-        totalScore += maxOption.score;
-      }
-    });
-    return totalScore;
-  };
-
   // 页面加载时获取打卡配置数据
   useEffect(() => {
     loadCheckinProfile();
@@ -49,25 +32,11 @@ export default function CheckinEditPage() {
       setLoading(true);
       setError("");
       
-      const response = await fetch(`/api/checkin/profile/${id}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          router.push('/404');
-          return;
-        }
-        throw new Error('获取打卡配置失败');
-      }
-      
-      const data = await response.json();
+      const data = await getCheckinProfile(id);
       const profile = data.profile;
 
       // 获取关联的问卷信息
-      const questionnaireResponse = await fetch(`/api/questionnaire/${profile.questionnaireId}`);
-      if (!questionnaireResponse.ok) {
-        throw new Error('获取问卷数据失败');
-      }
-      
-      const questionnaireData = await questionnaireResponse.json();
+      const questionnaireData = await getQuestionnaire(profile.questionnaireId);
       const questionnaire = questionnaireData.questionnaire;
 
       setCheckinProfile({
@@ -85,6 +54,10 @@ export default function CheckinEditPage() {
         },
       });
     } catch (err) {
+      if (err instanceof Error && err.message === 'NOT_FOUND') {
+        router.push('/404');
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : '获取打卡配置失败';
       setError(errorMessage);
       toast.error(errorMessage);
@@ -102,8 +75,8 @@ export default function CheckinEditPage() {
         return
       }
 
-      // 准备API数据
-      const apiData: CheckinProfileUpdateRequest = {
+      // 更新现有打卡配置
+      await updateCheckinProfile(id, {
         title: checkinProfile.title,
         description: checkinProfile.description,
         frequency: checkinProfile.frequency,
@@ -116,23 +89,9 @@ export default function CheckinEditPage() {
           questions: checkinProfile.questionnaire.questions,
           title: checkinProfile.title,
           description: checkinProfile.description,
-          totalScore: calculateTotalScore()
+          totalScore: calculateTotalScore(checkinProfile.questionnaire.questions)
         }
-      };
-
-      // 更新现有打卡配置
-      const response = await fetch(`/api/checkin/profile/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '更新打卡配置失败');
-      }
 
       toast.success("打卡配置已更新！");
     } catch (err) {
@@ -149,14 +108,7 @@ export default function CheckinEditPage() {
       setSaveLoading(true);
       setError("");
 
-      const response = await fetch(`/api/checkin/profile/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '删除打卡配置失败');
-      }
+      await deleteCheckinProfile(id);
 
       toast.success("打卡配置已删除！");
       
@@ -189,7 +141,7 @@ export default function CheckinEditPage() {
  
   return (
     <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10 pb-20">
-      <div className="w-full max-w-[1200px] space-y-6">
+      <div className="w-full max-w-[1200px] space-y-6 px-8">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-2xl font-bold mb-2">编辑打卡配置</h1>
           <p className="text-gray-500">修改您的习惯打卡配置</p>
