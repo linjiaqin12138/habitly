@@ -135,7 +135,7 @@ export function dbToApiProfile(db: CheckinProfileDB): CheckinProfile {
     title: db.title,
     description: db.description,
     frequency: db.frequency,
-    reminderTime: db.reminder_time,
+    reminderTime: db.reminder_time ? db.reminder_time.substring(0, 5) : undefined,
     rewardRules: db.reward_rules,
     isActive: db.is_active,
     createdAt: new Date(db.created_at),

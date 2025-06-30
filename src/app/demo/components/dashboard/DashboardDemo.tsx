@@ -46,12 +46,12 @@ export function DashboardDemo() {
       <Card className="md:col-span-2 lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>我的问卷</CardTitle>
+            <CardTitle>我的打卡</CardTitle>
             <CardDescription>今日打卡状态</CardDescription>
           </div>
           <Button size="sm" className="gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
-            <span>新建问卷</span>
+            <span>新建打卡</span>
           </Button>
         </CardHeader>
         <CardContent>
