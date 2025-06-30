@@ -1,5 +1,14 @@
 import { CheckinProfile, CheckinProfileUpdateRequest, CheckinProfileCreateRequest } from '@/types/checkin';
 
+// 获取打卡配置列表
+export async function getCheckinProfiles(): Promise<{ profiles: CheckinProfile[] }> {
+  const response = await fetch('/api/checkin/profile');
+  if (!response.ok) {
+    throw new Error('获取打卡配置列表失败');
+  }
+  return await response.json();
+}
+
 // 获取打卡配置详情
 export async function getCheckinProfile(id: string): Promise<{ profile: CheckinProfile }> {
   const response = await fetch(`/api/checkin/profile/${id}`);

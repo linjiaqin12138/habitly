@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// 模拟问卷数据
+// 模拟打卡计划数据
 const questionnaires = [
   {
     id: "qnr1",
@@ -54,7 +54,7 @@ const questionnaires = [
   },
   {
     id: "qnr4",
-    title: "阅读打卡问卷",
+    title: "阅读打卡计划",
     description: "记录阅读书籍和页数",
     status: "archived",
     createdAt: "2024-06-30",
@@ -68,13 +68,13 @@ export function QuestionnaireListDemo() {
       <Card className="bg-white/50 backdrop-blur-sm shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle className="text-2xl font-bold">问卷列表</CardTitle>
-            <CardDescription>管理你的所有打卡问卷模板</CardDescription>
+            <CardTitle className="text-2xl font-bold">打划列表</CardTitle>
+            <CardDescription>管理你的所有打卡计划模板</CardDescription>
           </div>
           <Button size="sm" className="gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              新建问卷
+              新建打卡计划
             </span>
           </Button>
         </CardHeader>
