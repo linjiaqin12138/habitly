@@ -1,4 +1,4 @@
-import { CheckinProfile, CheckinProfileUpdateRequest, CheckinProfileCreateRequest } from '@/types/checkin';
+import { CheckinProfile, CheckinProfileUpdateRequest, CheckinProfileCreateRequest, CheckinRecordsResponse } from '@/types/checkin';
 
 // 获取打卡配置列表
 export async function getCheckinProfiles(): Promise<{ profiles: CheckinProfile[] }> {
@@ -68,5 +68,29 @@ export async function createCheckinProfile(data: CheckinProfileCreateRequest): P
     throw new Error(errorData.message || '保存打卡配置失败');
   }
 
+  return await response.json();
+}
+
+// 获取打卡记录
+export async function getCheckinRecords(options: {
+  profileId?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<CheckinRecordsResponse> {
+  const params = new URLSearchParams();
+  
+  if (options.profileId) params.append('profileId', options.profileId);
+  if (options.startDate) params.append('startDate', options.startDate);
+  if (options.endDate) params.append('endDate', options.endDate);
+  if (options.limit) params.append('limit', options.limit.toString());
+  if (options.offset) params.append('offset', options.offset.toString());
+
+  const response = await fetch(`/api/checkin/records?${params.toString()}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || '获取打卡记录失败');
+  }
   return await response.json();
 }
