@@ -98,3 +98,4 @@ export function MakeupCheckinDemo() {
       </CardContent>
     </Card>
   );
+}

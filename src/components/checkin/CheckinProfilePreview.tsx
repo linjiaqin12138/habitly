@@ -44,7 +44,7 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
           break;
 
         case "text":
-          if (answer && answer.trim()) {
+          if (answer && typeof answer === "string" && answer.trim()) {
             totalScore += 5; // 填空题默认5分
           }
           break;
@@ -153,9 +153,9 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
                     <input
                       type="checkbox"
                       value={option.id}
-                      checked={(currentAnswer[question.id] || []).includes(option.id)}
+                      checked={Array.isArray(currentAnswer[question.id]) && (currentAnswer[question.id] as string[]).includes(option.id)}
                       onChange={(e) => {
-                        const current = currentAnswer[question.id] || [];
+                        const current = Array.isArray(currentAnswer[question.id]) ? currentAnswer[question.id] as string[] : [];
                         const value = e.target.value;
                         handleAnswerChange(
                           question.id,
@@ -182,13 +182,13 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
             {question.type === "score" && (
               <div className="space-y-2">
                 <Slider
-                  value={[currentAnswer[question.id] || 0]}
+                  value={[Number(currentAnswer[question.id]) || 0]}
                   onValueChange={(value) => handleAnswerChange(question.id, value[0])}
                   max={question.maxScore}
                   step={1}
                 />
                 <div className="text-sm text-muted-foreground text-right">
-                  {currentAnswer[question.id] || 0} / {question.maxScore}
+                  {Number(currentAnswer[question.id]) || 0} / {question.maxScore}
                 </div>
               </div>
             )}

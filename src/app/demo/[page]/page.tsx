@@ -70,8 +70,9 @@ const demoPages = {
   }
 };
 
-export default function DemoPage({ params }: { params: { page: string } }) {
-  const demo = demoPages[params.page as keyof typeof demoPages];
+export default async function DemoPage({ params }: { params: Promise<{ page: string }> }) {
+  const { page } = await params;
+  const demo = demoPages[page as keyof typeof demoPages];
   
   if (!demo) {
     notFound();

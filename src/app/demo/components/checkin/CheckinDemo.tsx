@@ -55,7 +55,7 @@ export function CheckinDemo() {
   const calculateScore = () => {
     let totalScore = 0;
     mockQuestionnaire.forEach((question) => {
-      if (question.type === "radio") {
+      if (question.type === "radio" && question.options) {
         const selectedOption = question.options.find(
           (opt) => opt.value === answers[question.id]
         );
@@ -101,7 +101,7 @@ export function CheckinDemo() {
               {mockQuestionnaire.map((question) => (
                 <div key={question.id} className="space-y-4">
                   <h3 className="font-medium">{question.title}</h3>
-                  {question.type === "radio" && (
+                  {question.type === "radio" && question.options && (
                     <RadioGroup
                       onValueChange={(value) =>
                         handleInputChange(question.id, value)
