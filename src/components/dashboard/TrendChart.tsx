@@ -10,12 +10,21 @@ import { CheckinProfile, CheckinRecord } from '@/types/checkin';
 import { generateTrendData, profileColors } from './utils';
 
 // 自定义Tooltip组件
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+        dataKey: string;
+        name: string;
+        value: number;
+        color: string;
+    }>;
+    label?: string;
+}) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-card border rounded-lg shadow-sm p-2 text-sm">
                 <p className="text-muted-foreground">{`${label}日`}</p>
-                {payload.map((entry: any) => (
+                {payload.map((entry) => (
                     <p key={entry.dataKey} className="font-medium" style={{ color: entry.color }}>
                         {`${entry.name}: ${entry.value}分`}
                     </p>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CheckCircle, Target, PiggyBank, BarChart3 } from "lucide-react";
+import { CheckCircle, Target, PiggyBank } from "lucide-react";
 
 export default function LandingPage() {
   return (

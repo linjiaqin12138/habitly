@@ -116,7 +116,7 @@ export const generateTrendData = (profiles: CheckinProfile[], records: CheckinRe
     });
 
     return dates.map(date => {
-        const dayData: any = {
+        const dayData: Record<string, string | number | null> = {
             name: new Date(date).getDate().toString(),
             date: date,
         };

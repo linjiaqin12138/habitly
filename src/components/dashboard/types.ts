@@ -1,4 +1,4 @@
-import { CheckinProfile, CheckinRecord, CheckinFrequency } from '@/types/checkin';
+import { CheckinProfile, CheckinRecord } from '@/types/checkin';
 import { Vault, VaultTransaction } from '@/types/vault';
 
 export interface DashboardData {

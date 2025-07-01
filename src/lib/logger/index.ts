@@ -166,4 +166,5 @@ export function getLogger(name: string): Logger {
 }
 
 // 默认导出
-export default { getLogger, LogLevel };
+const loggerExport = { getLogger, LogLevel };
+export default loggerExport;

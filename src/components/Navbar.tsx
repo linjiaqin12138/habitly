@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Menu, LogOut, Home, Vault } from 'lucide-react'
 
 export function Navbar() {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)

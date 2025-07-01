@@ -6,8 +6,7 @@ import {
   submitQuestionnaireResponse
 } from './questionnaireService';
 import {
-  addReward,
-  getVaultByUserId
+  addReward
 } from './vaultService';
 import {
   CheckinProfile,
