@@ -68,9 +68,9 @@ const mockTrendData = generateTrendData();
 
 // 定义问卷对应的颜色
 const questionnaireColors = {
-  "每日情绪记录": "hsl(var(--primary))",
-  "每周工作复盘": "hsl(var(--secondary))",
-  "健身习惯追踪": "hsl(var(--accent))",
+  "每日情绪记录": "#3b82f6", // blue
+  "每周工作复盘": "#10b981", // green  
+  "健身习惯追踪": "#f59e0b", // amber
 };
 
 // 自定义Tooltip组件
@@ -180,19 +180,19 @@ export function HistoryDemo() {
                     strokeDasharray="3 3" 
                     horizontal={true}
                     vertical={false}
-                    stroke="hsl(var(--muted-foreground))" 
-                    opacity={0.2} 
+                    stroke="#e5e7eb" 
+                    opacity={0.5} 
                   />
                   <XAxis
                     dataKey="name"
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#6b7280"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
                     domain={[60, 100]}
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="#6b7280"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -200,9 +200,9 @@ export function HistoryDemo() {
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  {Object.entries(questionnaireColors).map(([name, color]) => (
-                    selectedQuestionnaire === "all" || 
-                    questionnaires.find(q => q.id === selectedQuestionnaire)?.title === name ? (
+                  {selectedQuestionnaire === "all" ? (
+                    // 显示所有问卷的线
+                    Object.entries(questionnaireColors).map(([name, color]) => (
                       <Line
                         key={name}
                         type="monotone"
@@ -215,11 +215,34 @@ export function HistoryDemo() {
                           r: 6,
                           strokeWidth: 2,
                           stroke: color,
-                          fill: "hsl(var(--background))"
+                          fill: "white"
                         }}
                       />
-                    ) : null
-                  ))}
+                    ))
+                  ) : (
+                    // 只显示选中问卷的线
+                    (() => {
+                      const selectedTitle = questionnaires.find(q => q.id === selectedQuestionnaire)?.title;
+                      const color = selectedTitle ? questionnaireColors[selectedTitle as keyof typeof questionnaireColors] : "#3b82f6";
+                      return selectedTitle ? (
+                        <Line
+                          key={selectedTitle}
+                          type="monotone"
+                          dataKey={selectedTitle}
+                          name={selectedTitle}
+                          stroke={color}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{
+                            r: 6,
+                            strokeWidth: 2,
+                            stroke: color,
+                            fill: "white"
+                          }}
+                        />
+                      ) : null;
+                    })()
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
