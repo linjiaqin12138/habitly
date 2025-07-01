@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Logger模块 - 支持分级日志输出和环境自适应格式化
 
 // 日志级别定义
@@ -47,6 +48,7 @@ function getSystemInfo() {
   } else {
     // Node.js环境
     return {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       hostname: require('os').hostname(),
       pid: process.pid,
     };

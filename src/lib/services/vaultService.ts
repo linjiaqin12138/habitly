@@ -132,7 +132,7 @@ export async function addReward(userId: string, rewardAmount: number, descriptio
     const supabase = await createClient();
     
     // 更新可支配奖励余额
-    let { error } = await supabase
+    const { error } = await supabase
       .from('vaults')
       .update({
         total_amount: vault.totalAmount - rewardAmount,
@@ -145,7 +145,7 @@ export async function addReward(userId: string, rewardAmount: number, descriptio
     }
 
     // 记录奖励交易
-    let { error: txErr } = await supabase
+    const { error: txErr } = await supabase
       .from('vault_transactions')
       .insert({
         user_id: userId,

@@ -45,7 +45,7 @@ const UpdateCheckinProfileSchema = z.object({
 
 export const GET = withErrorHandling(
   withAuth(async ({ user, context }) => {
-    const { id } = context.params;
+    const { id } = await context.params;
     
     const profile = await checkinService.getCheckinProfile(user.id, id);
     if (!profile) {
@@ -58,7 +58,7 @@ export const GET = withErrorHandling(
 
 export const PUT = withErrorHandling(
   withAuth(async ({ user, req, context }) => {
-    const { id } = context.params;
+    const { id } = await context.params;
     const body = await req.json();
     
     const parse = UpdateCheckinProfileSchema.safeParse(body);
@@ -84,7 +84,7 @@ export const PUT = withErrorHandling(
 
 export const DELETE = withErrorHandling(
   withAuth(async ({ user, context }) => {
-    const { id } = context.params;
+    const { id } = await context.params;
     
     try {
       await checkinService.deleteCheckinProfile(user.id, id);

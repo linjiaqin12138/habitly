@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { AppError, GeneralErrorCode } from '@/types/error';
+import { getLogger } from '../logger';
+import { ApiHandlerContext, NextApiContext } from '@/types/apiContext';
 
+const logger = getLogger('withErrorHandling');
 const DefaultErrorCodeToStatusMapping = {
     [GeneralErrorCode.UNAUTHORIZED]: 401,
     [GeneralErrorCode.FORBIDDEN]: 403,
@@ -11,16 +14,16 @@ const DefaultErrorCodeToStatusMapping = {
     [GeneralErrorCode.SERVICE_UNAVAILABLE]: 503
 }
 
-export function withErrorHandling<TContext = Record<string, unknown>>(
-  handler: (ctx: TContext, ...args: unknown[]) => Promise<Response>,
+export function withErrorHandling(
+  handler: (ctx: Omit<ApiHandlerContext, 'user'>) => Promise<Response>,
   errorCodeToStatus: Record<string, number> = {}
 ) {
   errorCodeToStatus = { ...DefaultErrorCodeToStatusMapping, ...errorCodeToStatus };
-  return async function (ctx: TContext, ...args: unknown[]) {
+  return async function (req: NextRequest, context: NextApiContext): Promise<Response> {
     try {
-      return await handler(ctx, ...args);
+      return await handler({ req, context });
     } catch (e: unknown) {
-      console.log(e)
+      logger.error("Error:", e);
       if (e instanceof AppError) {
         const status = errorCodeToStatus[e.code] ?? 500;
         return NextResponse.json({ error: e.code, message: e.message }, { status });

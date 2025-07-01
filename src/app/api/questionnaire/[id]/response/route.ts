@@ -17,7 +17,7 @@ const SubmitResponseSchema = z.object({
 
 export const POST = withErrorHandling(
   withAuth(async ({ user, req, context }) => {
-    const questionnaireId = context.params.id as string;
+    const { id: questionnaireId } = await context.params;
     const body = await req.json();
     const parse = SubmitResponseSchema.safeParse(body);
     if (!parse.success) {

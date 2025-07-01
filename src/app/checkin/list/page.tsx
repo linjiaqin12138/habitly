@@ -51,7 +51,7 @@ export default function CheckinListPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CheckinProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  // const [_, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfiles();
@@ -86,7 +86,7 @@ export default function CheckinListPage() {
 
   const handleDeleteClick = (profile: CheckinProfile) => {
     // 先关闭dropdown
-    setOpenDropdownId(null);
+    // setOpenDropdownId(null);
     // 使用setTimeout确保dropdown完全关闭后再打开dialog
     setTimeout(() => {
       setProfileToDelete(profile);
@@ -113,10 +113,10 @@ export default function CheckinListPage() {
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setProfileToDelete(null);
-  };
+  // const handleDeleteCancel = () => {
+  //   setDeleteDialogOpen(false);
+  //   setProfileToDelete(null);
+  // };
 
   const formatFrequency = (frequency: CheckinProfile['frequency']) => {
     switch (frequency.type) {

@@ -31,7 +31,7 @@ const UpdateQuestionnaireSchema = z.object({
 
 export const GET = withErrorHandling(
     withAuth(async ({ user, context }) => {
-        const id = context.params.id as string;
+        const { id } = await context.params;
         const questionnaire = await getQuestionnaireById(user.id, id);
         if (!questionnaire) {
             throw new AppError(GeneralErrorCode.NOT_FOUND, '问卷不存在');
@@ -42,7 +42,7 @@ export const GET = withErrorHandling(
 
 export const PUT = withErrorHandling(
     withAuth(async ({ user, req, context }) => {
-        const id = context.params.id as string;
+        const { id } = await context.params;
         const body = await req.json();
         const parse = UpdateQuestionnaireSchema.safeParse(body);
         if (!parse.success) {
@@ -56,9 +56,8 @@ export const PUT = withErrorHandling(
 
 export const DELETE = withErrorHandling(
     withAuth(async ({ user, context }) => {
-        const id = context.params.id as string;
+        const { id } = await context.params;
         await deleteQuestionnaire(user.id, id);
-        // 只回复一个200 OK，没有body
         return NextResponse.json(null, { status: 200 });
     })
 );

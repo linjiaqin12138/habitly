@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
-import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
+import { AppError, GeneralErrorCode } from '@/types/error';
 
 const AnswerValueSchema = z.union([
   z.string(),

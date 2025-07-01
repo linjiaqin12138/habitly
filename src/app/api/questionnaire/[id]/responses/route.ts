@@ -12,7 +12,7 @@ const QuerySchema = z.object({
 
 export const GET = withErrorHandling(
   withAuth(async ({ user, req, context }) => {
-    const questionnaireId = context.params.id as string;
+    const { id: questionnaireId } = await context.params;
     const url = new URL(req.url);
     const parse = QuerySchema.safeParse(Object.fromEntries(url.searchParams.entries()));
     if (!parse.success) {

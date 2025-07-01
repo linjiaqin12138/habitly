@@ -82,7 +82,7 @@ export default function CheckinNewPage() {
     try {
       setLoading(true);
       setError("");
-      const data = await createCheckinProfile({
+      await createCheckinProfile({
         title: checkinProfile.title,
         description: checkinProfile.description,
         frequency: checkinProfile.frequency,
@@ -100,7 +100,7 @@ export default function CheckinNewPage() {
       });
 
       toast.success("打卡配置已保存！");
-      router.replace(`/checkin/edit/${data.profile.id}`);
+      router.replace(`/checkin/list`);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "保存打卡配置失败";
       setError(errorMessage);
