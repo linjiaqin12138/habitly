@@ -270,34 +270,13 @@ export async function submitRemedialCheckin(userId: string, request: CheckinReme
     request.answers
   );
 
-  // 2. 计算奖励金额
-  const rewardAmount = calculateReward(response.score, profile.rewardRules);
+  // 2. 计算奖励金额（补救打卡奖励减半）
+  const baseRewardAmount = calculateReward(response.score, profile.rewardRules);
+  const rewardAmount = baseRewardAmount * 0.5;
 
   // 3. 发放奖励
   if (rewardAmount > 0) {
-    const vault = await getVaultByUserId(userId);
-    const supabase = await createClient();
-    
-    // 更新可支配奖励余额
-    await supabase
-      .from('vaults')
-      .update({ 
-        available_rewards: vault.availableRewards + rewardAmount 
-      })
-      .eq('id', vault.id);
-
-    // 记录奖励交易
-    await supabase
-      .from('vault_transactions')
-      .insert({
-        user_id: userId,
-        vault_id: vault.id,
-        type: 'reward',
-        amount: rewardAmount,
-        balance_after: vault.availableRewards + rewardAmount,
-        description: `补救打卡奖励: ${profile.title}`,
-        created_at: new Date().toISOString(),
-      });
+    await addReward(userId, rewardAmount, `补救打卡奖励: ${profile.title}`);
   }
 
   // 4. 保存打卡记录

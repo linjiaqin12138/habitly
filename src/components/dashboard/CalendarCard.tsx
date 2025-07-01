@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Card,
     CardContent,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { CheckinProfile, CheckinRecord } from '@/types/checkin';
-import { CheckinRecordWithProfile, ProfileOption } from './types';
+import { ProfileOption } from './types';
 import { getDateStatus, getRecordsForDate } from './utils';
 
 interface CalendarCardProps {
@@ -25,10 +26,20 @@ export default function CalendarCard({
     profileOptions
 }: CalendarCardProps) {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const router = useRouter();
 
     // 处理日期选择
     const handleDateSelect = (date: Date | undefined) => {
         setSelectedDate(date);
+        
+        // 只在单个配置视图下支持点击跳转
+        if (date && selectedProfile !== "all") {
+            const dateStatus = getDateStatus(date, profiles, records, selectedProfile);
+            if (dateStatus === 'canMakeup') {
+                const dateStr = date.toISOString().split('T')[0];
+                router.push(`/checkin/makeup/${selectedProfile}?date=${dateStr}`);
+            }
+        }
     };
 
     // 获取指定日期的打卡记录
@@ -52,6 +63,7 @@ export default function CalendarCard({
                     modifiers={{
                         onTime: (date) => getDateStatus(date, profiles, records, selectedProfile) === 'onTime',
                         remedial: (date) => getDateStatus(date, profiles, records, selectedProfile) === 'remedial',
+                        canMakeup: (date) => getDateStatus(date, profiles, records, selectedProfile) === 'canMakeup',
                         missed: (date) => getDateStatus(date, profiles, records, selectedProfile) === 'missed',
                     }}
                     modifiersStyles={{
@@ -63,8 +75,13 @@ export default function CalendarCard({
                             backgroundColor: "#f59e0b", // 黄色 - 补救打卡
                             color: "white",
                         },
+                        canMakeup: {
+                            backgroundColor: "#fb923c", // 橙色 - 可补救的缺卡
+                            color: "white",
+                            cursor: selectedProfile !== "all" ? "pointer" : "default",
+                        },
                         missed: {
-                            backgroundColor: "#ef4444", // 红色 - 应该打卡但没打卡
+                            backgroundColor: "#ef4444", // 红色 - 不可补救的缺卡
                             color: "white",
                         },
                     }}

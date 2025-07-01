@@ -139,7 +139,7 @@ export const getDateStatus = (
     profiles: CheckinProfile[], 
     records: CheckinRecord[], 
     selectedProfile: string
-): 'onTime' | 'remedial' | 'missed' | 'none' => {
+): 'onTime' | 'remedial' | 'canMakeup' | 'missed' | 'none' => {
     const dateStr = date.toISOString().split('T')[0];
 
     // 获取该日期的记录
@@ -167,11 +167,24 @@ export const getDateStatus = (
     }
 
     if (dateRecords.length === 0) {
-        // 应该打卡但没有记录 - 只有今天之前的日期才算missed
+        // 应该打卡但没有记录
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(0, 0, 0, 0);
-        return date < today ? 'missed' : 'none';
+        
+        // 只检查今天之前的日期
+        if (date < today && profiles.some(profile => new Date(profile.createdAt) <= date)) {
+            // 检查是否在可补救范围内（过去3天）
+            const threeDaysAgo = new Date(today);
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            
+            if (date >= threeDaysAgo) {
+                return 'canMakeup'; // 可补救的缺卡
+            } else {
+                return 'missed'; // 不可补救的缺卡
+            }
+        }
+        return 'none'
     }
 
     // 有记录，检查是否有补救打卡

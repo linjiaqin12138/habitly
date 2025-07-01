@@ -49,8 +49,7 @@ export default function CheckinStatsCard({
                                     <div className="flex items-center justify-between mb-2">
                                         <h3 className="font-semibold">{stats.title}</h3>
                                         <Badge variant={
-                                            stats.todayStatus === "已完成" ? "default" :
-                                                stats.todayStatus === "不需要" ? "secondary" : "secondary"
+                                            stats.todayStatus === "已完成" ? "default" : "secondary"
                                         }>
                                             {stats.todayStatus}
                                         </Badge>

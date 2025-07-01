@@ -1,47 +1,77 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { getCheckinProfile, submitCheckin } from "@/lib/api/checkinApi";
+import { getCheckinProfile, submitRemedialCheckin } from "@/lib/api/checkinApi";
 import { getQuestionnaire } from "@/lib/api/questionnaireApi";
 import { CheckinProfile } from "@/types/checkin";
 import { Questionnaire } from "@/types/questionnaire";
 import PageLoading from "@/components/pageload";
+import MakeupReasonForm from "@/components/checkin/MakeupReasonForm";
 import CheckinForm from "@/components/checkin/CheckinForm";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface CheckinState {
+interface MakeupState {
   profile: CheckinProfile | null;
   questionnaire: Questionnaire | null;
   loading: boolean;
   submitting: boolean;
   error: string;
+  reasonSubmitted: boolean;
+  reason: string;
   submitted: boolean;
   finalScore: number;
   finalReward: number;
 }
 
-export default function CheckinPage() {
+export default function MakeupCheckinPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const date = searchParams.get('date');
 
-  const [state, setState] = useState<CheckinState>({
+  const [state, setState] = useState<MakeupState>({
     profile: null,
     questionnaire: null,
     loading: true,
     submitting: false,
     error: "",
+    reasonSubmitted: false,
+    reason: "",
     submitted: false,
     finalScore: 0,
     finalReward: 0,
   });
 
-  const loadCheckinData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: "" }));
+
+      // 验证日期参数
+      if (!date) {
+        throw new Error('缺少补救日期参数');
+      }
+
+      // 验证日期格式和范围
+      const makeupDate = new Date(date);
+      const today = new Date();
+      const threeDaysAgo = new Date(today);
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      if (isNaN(makeupDate.getTime())) {
+        throw new Error('无效的日期格式');
+      }
+
+      if (makeupDate >= today) {
+        throw new Error('只能补救过去的打卡');
+      }
+
+      if (makeupDate < threeDaysAgo) {
+        throw new Error('只能补救最近3天内的缺卡');
+      }
 
       // 获取打卡配置
       const profileData = await getCheckinProfile(id);
@@ -62,24 +92,34 @@ export default function CheckinPage() {
         router.push('/404');
         return;
       }
-      const errorMessage = err instanceof Error ? err.message : '加载打卡数据失败';
+      const errorMessage = err instanceof Error ? err.message : '加载数据失败';
       setState(prev => ({ ...prev, error: errorMessage, loading: false }));
       toast.error(errorMessage);
     }
-  }, [id, router]);
+  }, [id, date, router]);
 
-  // 加载打卡配置和问卷
   useEffect(() => {
-    loadCheckinData();
-  }, [loadCheckinData]);
+    loadData();
+  }, [loadData]);
 
-  const handleSubmit = async (answers: Record<string, string | string[] | number>) => {
+  const handleReasonSubmit = (reason: string) => {
+    setState(prev => ({
+      ...prev,
+      reasonSubmitted: true,
+      reason,
+    }));
+  };
+
+  const handleCheckinSubmit = async (answers: Record<string, string | string[] | number>) => {
+    if (!date) return;
+
     try {
       setState(prev => ({ ...prev, submitting: true, error: "" }));
 
-      const data = await submitCheckin({
+      const data = await submitRemedialCheckin({
         profileId: id,
         answers,
+        checkinDate: date,
       });
 
       const record = data.record;
@@ -92,9 +132,9 @@ export default function CheckinPage() {
         submitting: false,
       }));
 
-      toast.success('打卡成功！');
+      toast.success('补救打卡成功！');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '提交打卡失败';
+      const errorMessage = err instanceof Error ? err.message : '提交补救打卡失败';
       setState(prev => ({ ...prev, error: errorMessage, submitting: false }));
       toast.error(errorMessage);
     }
@@ -102,9 +142,7 @@ export default function CheckinPage() {
 
   // 加载状态
   if (state.loading) {
-    return (
-      <PageLoading />
-    );
+    return <PageLoading />;
   }
 
   // 错误状态
@@ -113,7 +151,9 @@ export default function CheckinPage() {
       <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10">
         <div className="text-center">
           <p className="text-red-500 mb-4">{state.error}</p>
-          <Button onClick={loadCheckinData}>重试</Button>
+          <Button onClick={loadData}>
+            重试
+          </Button>
         </div>
       </div>
     );
@@ -127,10 +167,10 @@ export default function CheckinPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-center text-green-500">
-                打卡成功！
+                补救打卡成功！
               </CardTitle>
               <p className="text-center text-muted-foreground">
-                感谢您的打卡，继续保持！
+                感谢您的补救打卡，继续保持！
               </p>
             </CardHeader>
             <CardContent>
@@ -139,14 +179,14 @@ export default function CheckinPage() {
                   <div className="text-4xl font-bold text-primary">
                     {state.finalScore}分
                   </div>
-                  <div className="text-sm text-muted-foreground">今日得分</div>
+                  <div className="text-sm text-muted-foreground">补救打卡得分</div>
                 </div>
                 {state.finalReward > 0 && (
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-500">
                       +¥{state.finalReward}
                     </div>
-                    <div className="text-sm text-muted-foreground">获得奖励</div>
+                    <div className="text-sm text-muted-foreground">获得奖励（补救打卡奖励减半）</div>
                   </div>
                 )}
                 <div className="text-center text-sm text-muted-foreground">
@@ -168,19 +208,29 @@ export default function CheckinPage() {
     );
   }
 
-  if (!state.profile || !state.questionnaire) {
+  if (!state.profile || !state.questionnaire || !date) {
     return null;
   }
 
   return (
     <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10 pb-20">
       <div className="w-full max-w-[800px] space-y-6 px-8">
-        <CheckinForm
-          profile={state.profile}
-          questionnaire={state.questionnaire}
-          onSubmit={handleSubmit}
-          submitting={state.submitting}
-        />
+        {!state.reasonSubmitted ? (
+          <MakeupReasonForm
+            date={date}
+            onSubmit={handleReasonSubmit}
+            disabled={state.submitting}
+          />
+        ) : (
+          <CheckinForm
+            profile={state.profile}
+            questionnaire={state.questionnaire}
+            onSubmit={handleCheckinSubmit}
+            submitting={state.submitting}
+            isRemedial={true}
+            remedialDate={date}
+          />
+        )}
       </div>
     </div>
   );

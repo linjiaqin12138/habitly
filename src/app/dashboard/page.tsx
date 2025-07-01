@@ -107,6 +107,7 @@ export default function DashboardPage() {
     if (!data) {
         return null;
     }
+    console.log("Dashboard data:", data);
 
     // 计算统计数据
     const profileStats = calculateProfileStats(data.profiles, data.records);
@@ -163,19 +164,23 @@ export default function DashboardPage() {
                 />
 
                 {/* 第三行：日历 + 趋势图 */}
-                <div className="grid gap-6 md:grid-cols-2">
-                    <CalendarCard
-                        profiles={data.profiles}
-                        records={data.records}
-                        selectedProfile={selectedProfile}
-                        profileOptions={profileOptions}
-                    />
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+                    <div className="lg:col-span-1">
+                        <CalendarCard
+                            profiles={data.profiles}
+                            records={data.records}
+                            selectedProfile={selectedProfile}
+                            profileOptions={profileOptions}
+                        />
+                    </div>
 
-                    <TrendChart
-                        profiles={data.profiles}
-                        records={data.records}
-                        selectedProfile={selectedProfile}
-                    />
+                    <div className="lg:col-span-2">
+                        <TrendChart
+                            profiles={data.profiles}
+                            records={data.records}
+                            selectedProfile={selectedProfile}
+                        />
+                    </div>
                 </div>
 
                 {/* 第四行：最近记录 */}

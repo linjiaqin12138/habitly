@@ -25,7 +25,7 @@ export default function VaultSummaryCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>小金库</CardTitle>
+                <CardTitle>小金库与计划完成度总览</CardTitle>
                 <CardDescription>{new Date().toLocaleDateString('zh-CN', {
                     year: 'numeric',
                     month: 'long',
