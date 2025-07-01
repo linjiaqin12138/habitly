@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { Questionnaire, Question } from "@/types/questionnaire";
 interface CheckinState {
   profile: CheckinProfile | null;
   questionnaire: Questionnaire | null;
-  answers: Record<string, any>;
+  answers: Record<string, string | string[] | number>;
   currentScore: number;
   possibleReward: number;
   loading: boolean;
@@ -49,21 +49,7 @@ export default function CheckinPage() {
     finalReward: 0,
   });
 
-  // 加载打卡配置和问卷
-  useEffect(() => {
-    loadCheckinData();
-  }, [id]);
-
-  // 实时计算分数和奖励
-  useEffect(() => {
-    if (state.questionnaire && state.profile) {
-      const score = calculateCurrentScore();
-      const reward = calculatePossibleReward(score);
-      setState(prev => ({ ...prev, currentScore: score, possibleReward: reward }));
-    }
-  }, [state.answers, state.questionnaire, state.profile]);
-
-  const loadCheckinData = async () => {
+  const loadCheckinData = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: "" }));
 
@@ -90,9 +76,15 @@ export default function CheckinPage() {
       setState(prev => ({ ...prev, error: errorMessage, loading: false }));
       toast.error(errorMessage);
     }
-  };
+  }, [id, router]);
 
-  const calculateCurrentScore = (): number => {
+  // 加载打卡配置和问卷
+  useEffect(() => {
+    loadCheckinData();
+  }, [loadCheckinData]);
+
+  // 计算当前分数
+  const calculateCurrentScore = useCallback((): number => {
     if (!state.questionnaire) return 0;
 
     let totalScore = 0;
@@ -127,9 +119,10 @@ export default function CheckinPage() {
     });
 
     return totalScore;
-  };
+  }, [state.questionnaire, state.answers]);
 
-  const calculatePossibleReward = (score: number): number => {
+  // 计算可能的奖励
+  const calculatePossibleReward = useCallback((score: number): number => {
     if (!state.profile) return 0;
 
     const eligibleRules = state.profile.rewardRules
@@ -137,9 +130,21 @@ export default function CheckinPage() {
       .sort((a, b) => b.amount - a.amount);
 
     return eligibleRules.length > 0 ? eligibleRules[0].amount : 0;
-  };
+  }, [state.profile]);
 
-  const handleAnswerChange = (questionId: string, value: any) => {
+  // 实时计算分数和奖励
+  useEffect(() => {
+    const currentScore = calculateCurrentScore();
+    const possibleReward = calculatePossibleReward(currentScore);
+    
+    setState(prev => ({
+      ...prev,
+      currentScore,
+      possibleReward,
+    }));
+  }, [calculateCurrentScore, calculatePossibleReward]);
+
+  const handleAnswerChange = (questionId: string, value: string | string[] | number) => {
     setState(prev => ({
       ...prev,
       answers: {

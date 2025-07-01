@@ -13,7 +13,7 @@ interface CheckinProfilePreviewProps {
 }
 
 export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewProps) {
-  const [currentAnswer, setCurrentAnswer] = useState<Record<string, any>>({});
+  const [currentAnswer, setCurrentAnswer] = useState<Record<string, string | string[] | number>>({});
 
   // 计算当前分数
   const calculateCurrentScore = (): number => {
@@ -58,7 +58,7 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
     return totalScore;
   };
 
-  const handleAnswerChange = (questionId: string, value: any) => {
+  const handleAnswerChange = (questionId: string, value: string | string[] | number) => {
     setCurrentAnswer((prev) => ({
       ...prev,
       [questionId]: value,

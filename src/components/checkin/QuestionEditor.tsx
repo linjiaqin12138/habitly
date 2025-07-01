@@ -19,7 +19,7 @@ interface QuestionEditorProps {
 }
 
 export function QuestionEditor({ questions, onChange }: QuestionEditorProps) {
-  const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (index: number, field: keyof Question, value: string | boolean | number) => {
     const newQuestions = [...questions];
     newQuestions[index] = {
       ...newQuestions[index],
@@ -40,7 +40,7 @@ export function QuestionEditor({ questions, onChange }: QuestionEditorProps) {
     onChange(newQuestions);
   };
 
-  const handleOptionChange = (questionIndex: number, optionIndex: number, field: 'text' | 'score', value: any) => {
+  const handleOptionChange = (questionIndex: number, optionIndex: number, field: 'text' | 'score', value: string) => {
     const newQuestions = [...questions];
     const newOptions = [...(newQuestions[questionIndex].options || [])];
     newOptions[optionIndex] = {

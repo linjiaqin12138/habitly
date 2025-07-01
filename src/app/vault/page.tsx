@@ -33,10 +33,11 @@ export default function VaultPage() {
       ]);
       setVault(vaultData.vault);
       setTransactions(transactionData.transactions || []);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setVault(null);
       setTransactions([]);
-      toast.error(e.message || "获取数据失败");
+      const errorMessage = e instanceof Error ? e.message : "获取数据失败";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ export default function VaultPage() {
       setShowSetAmountDialog(false);
       setNewAmount("");
       await fetchVaultAndTransactions();
-    } catch (error: any) {
-      toast.error(error.message || "设置失败，请稍后重试");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "设置失败，请稍后重试";
+      toast.error(errorMessage);
     } finally {
       setProcessingAction(false);
     }
@@ -91,8 +93,9 @@ export default function VaultPage() {
       setSpendAmount("");
       setSpendDescription("");
       await fetchVaultAndTransactions();
-    } catch (error: any) {
-      toast.error(error.message || "消费失败，请稍后重试");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "消费失败，请稍后重试";
+      toast.error(errorMessage);
     } finally {
       setProcessingAction(false);
     }

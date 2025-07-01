@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
@@ -69,14 +69,15 @@ export const PUT = withErrorHandling(
     try {
       const profile = await checkinService.updateCheckinProfile(user.id, id, parse.data);
       return NextResponse.json({ profile });
-    } catch (error: any) {
-      if (error.message.includes('不存在')) {
-        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      if (errorMessage.includes('不存在')) {
+        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, errorMessage);
       }
-      if (error.message.includes('问卷')) {
-        throw new AppError(CheckinErrorCode.QUESTIONNAIRE_ERROR, error.message);
+      if (errorMessage.includes('问卷')) {
+        throw new AppError(CheckinErrorCode.QUESTIONNAIRE_ERROR, errorMessage);
       }
-      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, error.message);
+      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, errorMessage);
     }
   })
 );
@@ -88,11 +89,12 @@ export const DELETE = withErrorHandling(
     try {
       await checkinService.deleteCheckinProfile(user.id, id);
       return NextResponse.json({ success: true });
-    } catch (error: any) {
-      if (error.message.includes('不存在')) {
-        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      if (errorMessage.includes('不存在')) {
+        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, errorMessage);
       }
-      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, error.message);
+      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, errorMessage);
     }
   })
 );

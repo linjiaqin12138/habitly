@@ -1,4 +1,4 @@
-export interface ApiHandlerContext<TUser = any, TReq = any, TContext = any> {
+export interface ApiHandlerContext<TUser = Record<string, unknown>, TReq = Record<string, unknown>, TContext = Record<string, unknown>> {
   user: TUser;
   req: TReq;
   context: TContext;

@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server';
 import type { ApiHandlerContext } from '@/types/apiContext';
 import { AppError } from '@/types/error';
 
-export function withAuth<TContext = any>(
-  handler: (ctx: ApiHandlerContext<any, NextRequest, TContext>) => Promise<Response>
+export function withAuth<TContext = Record<string, unknown>>(
+  handler: (ctx: ApiHandlerContext<Record<string, unknown>, NextRequest, TContext>) => Promise<Response>
 ) {
   return async function (req: NextRequest, context: TContext) {
     const user = await getUser();

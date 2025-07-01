@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { setVaultAmount } from '@/lib/services/vaultService';
-import { getUser } from '@/lib/supabase/server';
-import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { withAuth } from '@/lib/utils/withAuth';
+import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError } from '@/types/error';
 
 const AmountSchema = z.object({

@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal, CheckCircle } from "lucide-react"
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
+import type { AuthChangeEvent } from '@supabase/supabase-js'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
     // to confirm the user is in the correct state, although updateUser
     // should work regardless if the session is active.
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
+      (event: AuthChangeEvent) => {
       if (event === "PASSWORD_RECOVERY") {
         // console.log("Password recovery state detected.");
         // You could potentially use the session here if needed,

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PlusCircle, Loader2, AlertCircle } from "lucide-react";
+import { PlusCircle, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCheckinProfiles, getCheckinRecords } from '@/lib/api/checkinApi';
 import { getVault, getVaultTransactions } from '@/lib/api/vaultApi';
@@ -174,7 +174,7 @@ export default function DashboardPage() {
         const sortedRecords = records.sort((a, b) => b.checkinDate.localeCompare(a.checkinDate));
 
         let streak = 0;
-        let currentDate = new Date();
+        const currentDate = new Date();
 
         // 从今天往前检查
         for (let i = 0; i < 30; i++) { // 最多检查30天

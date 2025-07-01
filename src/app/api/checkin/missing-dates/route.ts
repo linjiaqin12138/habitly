@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
@@ -27,11 +27,12 @@ export const GET = withErrorHandling(
     try {
       const result = await checkinService.getMissingDates(user.id, parse.data.profileId, parse.data.days);
       return NextResponse.json(result);
-    } catch (error: any) {
-      if (error.message.includes('不存在')) {
-        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      if (errorMessage.includes('不存在')) {
+        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, errorMessage);
       }
-      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, error.message);
+      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, errorMessage);
     }
   })
 );

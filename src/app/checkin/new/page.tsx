@@ -25,10 +25,10 @@ const defaultCheckinProfile: CheckinProfileFormType = {
       amount: 5,
     },
     {
-      id: "reward2", 
+      id: "reward2",
       threshold: 90,
       amount: 10,
-    }
+    },
   ],
   questionnaire: {
     questions: [
@@ -87,9 +87,9 @@ export default function CheckinNewPage() {
         description: checkinProfile.description,
         frequency: checkinProfile.frequency,
         reminderTime: checkinProfile.reminderTime,
-        rewardRules: checkinProfile.rewardRules.map(r => ({
-          threshold: r.threshold,
-          amount: r.amount
+        rewardRules: checkinProfile.rewardRules.map((rule, index) => ({
+          ...rule,
+          id: `reward${index}_${Date.now()}`,
         })),
         questionnaire: {
           questions: checkinProfile.questionnaire.questions,
@@ -101,8 +101,8 @@ export default function CheckinNewPage() {
 
       toast.success("打卡配置已保存！");
       router.replace(`/checkin/edit/${data.profile.id}`);
-    } catch (err: any) {
-      const errorMessage = err.message || '保存打卡配置失败';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "保存打卡配置失败";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

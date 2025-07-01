@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
@@ -70,11 +70,12 @@ export const POST = withErrorHandling(
     try {
       const profile = await checkinService.createCheckinProfile(user.id, parse.data);
       return NextResponse.json({ profile });
-    } catch (error: any) {
-      if (error.message.includes('问卷')) {
-        throw new AppError(CheckinErrorCode.QUESTIONNAIRE_ERROR, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      if (errorMessage.includes('问卷')) {
+        throw new AppError(CheckinErrorCode.QUESTIONNAIRE_ERROR, errorMessage);
       }
-      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, error.message);
+      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, errorMessage);
     }
   })
 );

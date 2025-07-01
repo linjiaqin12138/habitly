@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -23,11 +23,7 @@ export default function CheckinEditPage() {
   const [error, setError] = useState<string>("");
 
   // 页面加载时获取打卡配置数据
-  useEffect(() => {
-    loadCheckinProfile();
-  }, [id]);
-
-  const loadCheckinProfile = async () => {
+  const loadCheckinProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -45,7 +41,7 @@ export default function CheckinEditPage() {
         description: profile.description,
         frequency: profile.frequency,
         reminderTime: profile.reminderTime,
-        rewardRules: profile.rewardRules.map((rule: any, index: number) => ({
+        rewardRules: profile.rewardRules.map((rule: { threshold: number; amount: number }, index: number) => ({
           ...rule,
           id: `reward${index}_${Date.now()}` // 确保每个规则都有ID
         })),
@@ -64,7 +60,11 @@ export default function CheckinEditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    loadCheckinProfile();
+  }, [id, loadCheckinProfile]);
 
   const handleSaveCheckinProfile = async () => {
     try {

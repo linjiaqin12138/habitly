@@ -10,7 +10,7 @@ interface RewardRulesEditorProps {
 }
 
 export function RewardRulesEditor({ rewardRules, onChange }: RewardRulesEditorProps) {
-  const handleRuleChange = (index: number, field: keyof RewardRule, value: any) => {
+  const handleRuleChange = (index: number, field: keyof RewardRule, value: number) => {
     const newRules = [...rewardRules];
     newRules[index] = {
       ...newRules[index],

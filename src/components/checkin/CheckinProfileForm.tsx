@@ -33,7 +33,7 @@ export function CheckinProfileForm({
   onDelete,
   isEditMode = false,
 }: CheckinProfileFormProps) {
-  const handleBasicInfoChange = (field: keyof typeof checkinProfile, value: any) => {
+  const handleBasicInfoChange = (field: keyof typeof checkinProfile, value: string | number | object) => {
     onProfileChange({
       ...checkinProfile,
       [field]: value,

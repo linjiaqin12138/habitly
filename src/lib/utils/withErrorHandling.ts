@@ -11,15 +11,15 @@ const DefaultErrorCodeToStatusMapping = {
     [GeneralErrorCode.SERVICE_UNAVAILABLE]: 503
 }
 
-export function withErrorHandling<TContext = any>(
-  handler: (ctx: TContext, ...args: any[]) => Promise<Response>,
+export function withErrorHandling<TContext = Record<string, unknown>>(
+  handler: (ctx: TContext, ...args: unknown[]) => Promise<Response>,
   errorCodeToStatus: Record<string, number> = {}
 ) {
   errorCodeToStatus = { ...DefaultErrorCodeToStatusMapping, ...errorCodeToStatus };
-  return async function (ctx: TContext, ...args: any[]) {
+  return async function (ctx: TContext, ...args: unknown[]) {
     try {
       return await handler(ctx, ...args);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.log(e)
       if (e instanceof AppError) {
         const status = errorCodeToStatus[e.code] ?? 500;

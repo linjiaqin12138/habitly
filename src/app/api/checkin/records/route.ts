@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';

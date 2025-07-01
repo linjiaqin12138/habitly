@@ -1,4 +1,5 @@
 // 打卡模块类型定义
+import { Question } from './questionnaire';
 
 // 数据库模型类型
 export interface CheckinProfileDB {
@@ -86,7 +87,7 @@ export interface CheckinProfileCreateRequest {
   questionnaire: {
     title: string;
     description: string;
-    questions: any[];
+    questions: Question[];
     totalScore: number;
   };
 }
@@ -100,19 +101,19 @@ export interface CheckinProfileUpdateRequest {
   questionnaire?: {
     title?: string;
     description?: string;
-    questions?: any[];
+    questions?: Question[];
     totalScore?: number;
   };
 }
 
 export interface CheckinSubmitRequest {
   profileId: string;
-  answers: Record<string, any>;
+  answers: Record<string, string | string[] | number>;
 }
 
 export interface CheckinRemedialRequest {
   profileId: string;
-  answers: Record<string, any>;
+  answers: Record<string, string | string[] | number>;
   checkinDate: string;
 }
 
