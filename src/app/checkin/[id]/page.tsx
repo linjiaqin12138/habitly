@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Clock, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { getCheckinProfile } from "@/lib/api/checkinApi";
+import { getCheckinProfile, submitCheckin } from "@/lib/api/checkinApi";
 import { getQuestionnaire } from "@/lib/api/questionnaireApi";
 import { CheckinProfile } from "@/types/checkin";
 import { Questionnaire, Question } from "@/types/questionnaire";
+import PageLoading from "@/components/pageload";
 
 interface CheckinState {
   profile: CheckinProfile | null;
@@ -175,23 +176,11 @@ export default function CheckinPage() {
     try {
       setState(prev => ({ ...prev, submitting: true, error: "" }));
 
-      const response = await fetch('/api/checkin/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          profileId: id,
-          answers: state.answers,
-        }),
+      const data = await submitCheckin({
+        profileId: id,
+        answers: state.answers,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '提交打卡失败');
-      }
-
-      const data = await response.json();
       const record = data.record;
 
       setState(prev => ({
@@ -293,12 +282,7 @@ export default function CheckinPage() {
   // 加载状态
   if (state.loading) {
     return (
-      <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-gray-500 mt-2">加载中...</p>
-        </div>
-      </div>
+      <PageLoading />
     );
   }
 

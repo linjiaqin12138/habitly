@@ -6,6 +6,7 @@ import {
   submitQuestionnaireResponse
 } from './questionnaireService';
 import {
+  addReward,
   getVaultByUserId
 } from './vaultService';
 import {
@@ -24,6 +25,10 @@ import {
   apiToDbProfile,
   apiToDbRecord
 } from '../../types/checkin';
+import { AppError, GeneralErrorCode } from '@/types/error';
+import { getLogger } from '../logger';
+
+const logger = getLogger('checkinService');
 
 // 获取打卡配置列表
 export async function getCheckinProfiles(userId: string): Promise<CheckinProfile[]> {
@@ -54,7 +59,7 @@ export async function getCheckinProfile(userId: string, id: string): Promise<Che
 
   if (error) {
     if (error.code === 'PGRST116') return null;
-    throw new Error(`获取打卡配置失败: ${error.message}`);
+    throw error;
   }
 
   return dbToApiProfile(data);
@@ -175,20 +180,21 @@ export async function deleteCheckinProfile(userId: string, id: string): Promise<
 export async function submitCheckin(userId: string, request: CheckinSubmitRequest): Promise<CheckinRecord> {
   const profile = await getCheckinProfile(userId, request.profileId);
   if (!profile) {
-    throw new Error('打卡配置不存在');
+    throw new AppError(GeneralErrorCode.NOT_FOUND, '打卡配置不存在');
   }
+  logger.trace('profile: ', profile);
 
   const today = new Date().toISOString().split('T')[0];
-  
+
   // 验证是否应该在今天打卡
   if (!shouldCheckinOnDate(profile.frequency, new Date())) {
-    throw new Error('今天不是打卡日期');
+    throw new AppError(GeneralErrorCode.FORBIDDEN, '今天不是打卡日期');
   }
 
   // 检查今天是否已经打过卡
   const existingRecord = await getCheckinRecord(userId, request.profileId, today);
   if (existingRecord) {
-    throw new Error('今日已经打过卡了');
+    throw new AppError(GeneralErrorCode.FORBIDDEN, '今日已经打过卡了');
   }
 
   // 1. 提交问卷答案
@@ -200,32 +206,9 @@ export async function submitCheckin(userId: string, request: CheckinSubmitReques
 
   // 2. 计算奖励金额
   const rewardAmount = calculateReward(response.score, profile.rewardRules);
-
   // 3. 发放奖励（调用小金库服务的addReward功能）
   if (rewardAmount > 0) {
-    const vault = await getVaultByUserId(userId);
-    const supabase = await createClient();
-    
-    // 更新可支配奖励余额
-    await supabase
-      .from('vaults')
-      .update({ 
-        available_rewards: vault.availableRewards + rewardAmount 
-      })
-      .eq('id', vault.id);
-
-    // 记录奖励交易
-    await supabase
-      .from('vault_transactions')
-      .insert({
-        user_id: userId,
-        vault_id: vault.id,
-        type: 'reward',
-        amount: rewardAmount,
-        balance_after: vault.availableRewards + rewardAmount,
-        description: `打卡奖励: ${profile.title}`,
-        created_at: new Date().toISOString(),
-      });
+    await addReward(userId, rewardAmount, `打卡奖励: ${profile.title}`);
   }
 
   // 4. 保存打卡记录
@@ -247,7 +230,7 @@ export async function submitCheckin(userId: string, request: CheckinSubmitReques
     .single();
 
   if (error) {
-    throw new Error(`保存打卡记录失败: ${error.message}`);
+    throw error;
   }
 
   return dbToApiRecord(data);

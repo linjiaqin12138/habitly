@@ -40,6 +40,8 @@ import {
 import { toast } from "sonner";
 import { getCheckinProfiles, deleteCheckinProfile } from "@/lib/api/checkinApi";
 import { CheckinProfile } from "@/types/checkin";
+import PageLoading from "@/components/pageload";
+
 
 export default function CheckinListPage() {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function CheckinListPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CheckinProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfiles();
@@ -82,8 +85,13 @@ export default function CheckinListPage() {
   };
 
   const handleDeleteClick = (profile: CheckinProfile) => {
-    setProfileToDelete(profile);
-    setDeleteDialogOpen(true);
+    // 先关闭dropdown
+    setOpenDropdownId(null);
+    // 使用setTimeout确保dropdown完全关闭后再打开dialog
+    setTimeout(() => {
+      setProfileToDelete(profile);
+      setDeleteDialogOpen(true);
+    }, 50);
   };
 
   const handleDeleteConfirm = async () => {
@@ -97,12 +105,17 @@ export default function CheckinListPage() {
       setProfileToDelete(null);
       // 重新加载列表
       await loadProfiles();
-    } catch (err) {
+   } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '删除打卡配置失败';
       toast.error(errorMessage);
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setProfileToDelete(null);
   };
 
   const formatFrequency = (frequency: CheckinProfile['frequency']) => {
@@ -124,12 +137,7 @@ export default function CheckinListPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center w-full min-h-[calc(100vh-80px)] pt-10">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-gray-500 mt-2">加载中...</p>
-        </div>
-      </div>
+      <PageLoading />
     );
   }
 

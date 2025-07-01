@@ -1,4 +1,4 @@
-import { CheckinProfile, CheckinProfileUpdateRequest, CheckinProfileCreateRequest, CheckinRecordsResponse } from '@/types/checkin';
+import { CheckinProfile, CheckinProfileUpdateRequest, CheckinProfileCreateRequest, CheckinRecordsResponse, CheckinSubmitRequest, CheckinRemedialRequest, CheckinRecord } from '@/types/checkin';
 
 // 获取打卡配置列表
 export async function getCheckinProfiles(): Promise<{ profiles: CheckinProfile[] }> {
@@ -92,5 +92,41 @@ export async function getCheckinRecords(options: {
     const errorData = await response.json();
     throw new Error(errorData.message || '获取打卡记录失败');
   }
+  return await response.json();
+}
+
+// 提交打卡
+export async function submitCheckin(data: CheckinSubmitRequest): Promise<{ record: CheckinRecord }> {
+  const response = await fetch('/api/checkin/submit', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || '提交打卡失败');
+  }
+
+  return await response.json();
+}
+
+// 提交补救打卡
+export async function submitRemedialCheckin(data: CheckinRemedialRequest): Promise<{ record: CheckinRecord }> {
+  const response = await fetch('/api/checkin/remedial', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || '提交补救打卡失败');
+  }
+
   return await response.json();
 }

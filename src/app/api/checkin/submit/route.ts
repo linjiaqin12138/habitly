@@ -23,25 +23,7 @@ export const POST = withErrorHandling(
     if (!parse.success) {
       throw new AppError(GeneralErrorCode.BAD_REQUEST, `参数验证失败: ${parse.error.message}`);
     }
-
-    try {
-      const record = await checkinService.submitCheckin(user.id, parse.data);
-      return NextResponse.json({ record });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      if (errorMessage.includes('不存在')) {
-        throw new AppError(CheckinErrorCode.PROFILE_NOT_FOUND, errorMessage);
-      }
-      if (errorMessage.includes('已经打过卡')) {
-        throw new AppError(CheckinErrorCode.ALREADY_CHECKED_IN, errorMessage);
-      }
-      if (errorMessage.includes('不是打卡日期')) {
-        throw new AppError(CheckinErrorCode.INVALID_CHECKIN_DATE, errorMessage);
-      }
-      if (errorMessage.includes('问卷')) {
-        throw new AppError(CheckinErrorCode.QUESTIONNAIRE_ERROR, errorMessage);
-      }
-      throw new AppError(GeneralErrorCode.INTERNAL_ERROR, errorMessage);
-    }
+    const record = await checkinService.submitCheckin(user.id, parse.data);
+    return NextResponse.json({ record });
   })
 );

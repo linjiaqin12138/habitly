@@ -2,9 +2,10 @@ import { getUser } from '@/lib/supabase/server';
 import type { NextRequest } from 'next/server';
 import type { ApiHandlerContext } from '@/types/apiContext';
 import { AppError } from '@/types/error';
+import { User } from '@supabase/supabase-js';
 
 export function withAuth<TContext = Record<string, unknown>>(
-  handler: (ctx: ApiHandlerContext<Record<string, unknown>, NextRequest, TContext>) => Promise<Response>
+  handler: (ctx: ApiHandlerContext<User, NextRequest, TContext>) => Promise<Response>
 ) {
   return async function (req: NextRequest, context: TContext) {
     const user = await getUser();

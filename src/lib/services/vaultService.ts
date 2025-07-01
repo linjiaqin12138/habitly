@@ -126,3 +126,38 @@ export async function getVaultTransactions(userId: string, type?: 'adjust' | 're
         total: count || 0,
     };
 }
+
+export async function addReward(userId: string, rewardAmount: number, description?: string): Promise<void> {
+    const vault = await getVaultByUserId(userId);
+    const supabase = await createClient();
+    
+    // 更新可支配奖励余额
+    let { error } = await supabase
+      .from('vaults')
+      .update({
+        total_amount: vault.totalAmount - rewardAmount,
+        available_rewards: vault.availableRewards + rewardAmount 
+      })
+      .eq('id', vault.id);
+
+    if (error) {
+        throw error;
+    }
+
+    // 记录奖励交易
+    let { error: txErr } = await supabase
+      .from('vault_transactions')
+      .insert({
+        user_id: userId,
+        vault_id: vault.id,
+        type: 'reward',
+        amount: rewardAmount,
+        balance_after: vault.availableRewards + rewardAmount,
+        description: description,
+        created_at: new Date().toISOString(),
+      });
+
+    if (txErr) {
+        throw txErr;
+    }
+}
