@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
@@ -33,11 +34,24 @@ export function CheckinProfileForm({
   onDelete,
   isEditMode = false,
 }: CheckinProfileFormProps) {
-  const handleBasicInfoChange = (field: keyof typeof checkinProfile, value: string | number | object) => {
+  const [enableReminder, setEnableReminder] = React.useState(
+    Boolean(checkinProfile.reminderTime)
+  );
+
+  const handleBasicInfoChange = (field: keyof typeof checkinProfile, value?: string | number | object) => {
     onProfileChange({
       ...checkinProfile,
       [field]: value,
     });
+  };
+
+  const handleReminderToggle = (checked: boolean) => {
+    setEnableReminder(checked);
+    if (!checked) {
+      handleBasicInfoChange('reminderTime');
+    } else {
+      handleBasicInfoChange('reminderTime', '21:00');
+    }
   };
 
   return (
@@ -78,14 +92,27 @@ export function CheckinProfileForm({
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="reminderTime" className="text-right">提醒时间</Label>
-                <Input
-                  id="reminderTime"
-                  type="time"
-                  value={checkinProfile.reminderTime}
-                  onChange={(e) => handleBasicInfoChange('reminderTime', e.target.value)}
-                  className="col-span-3"
-                />
+                <Label className="text-right">提醒设置</Label>
+                <div className="col-span-3 flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="enableReminder"
+                      checked={enableReminder}
+                      onCheckedChange={handleReminderToggle}
+                    />
+                    <Label htmlFor="enableReminder" className="whitespace-nowrap">启用提醒</Label>
+                  </div>
+                  
+                  {enableReminder && (
+                    <Input
+                      type="time"
+                      value={checkinProfile.reminderTime || ''}
+                      onChange={(e) => handleBasicInfoChange('reminderTime', e.target.value)}
+                      placeholder="请选择提醒时间"
+                      className="w-fit min-w-0"
+                    />
+                  )}
+                </div>
               </div>
               
               <FrequencySelector

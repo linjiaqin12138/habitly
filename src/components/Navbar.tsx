@@ -21,9 +21,6 @@ export function Navbar() {
   if (hideNavbarRoutes.some(route => pathname.startsWith(route))) {
     return null
   }
-
-  // 打卡页面使用特殊的汉堡菜单
-  const isCheckinPage = pathname.startsWith('/checkin/')
   
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -41,47 +38,6 @@ export function Navbar() {
           <div className="flex items-center space-x-4">
             <div className="h-6 w-20 bg-muted animate-pulse rounded" />
           </div>
-        </div>
-      </nav>
-    )
-  }
-
-  // 打卡页面的汉堡菜单
-  if (isCheckinPage && isAuthenticated) {
-    return (
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Habitly
-          </Link>
-          
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">打开菜单</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-64">
-              <div className="flex flex-col space-y-4 mt-8">
-                <Link 
-                  href="/dashboard" 
-                  onClick={closeMenu}
-                  className="flex items-center space-x-2 text-lg hover:text-primary transition-colors"
-                >
-                  <Home className="h-5 w-5" />
-                  <span>返回Dashboard</span>
-                </Link>
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 text-lg hover:text-primary transition-colors text-left"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>退出登录</span>
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </nav>
     )
