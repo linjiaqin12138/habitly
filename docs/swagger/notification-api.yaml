@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: 消息通知模块 API
+  description: |
+    用户消息通知管理系统API，支持PushPlus通知配置和发送功能
+    
+    ## 认证方式
+    所有API都通过Supabase SDK进行认证，无需在此文档中配置认证信息。
+    
+    ## 用户信息
+    通过Supabase认证后，可获得以下用户信息：
+    - user.id: 用户唯一标识
+    - user.email: 用户邮箱
+    - user.user_metadata: 用户自定义元数据
+    - user.app_metadata: 应用元数据
+    
+    ## 功能概述
+    - 支持PushPlus通知渠道配置
+    - 提供通知配置验证接口
+    - 保存时自动验证Token有效性
+    - 与其他模块无缝集成
+  version: 1.0.0
+  contact:
+    name: HabitTracker Team
+
+servers:
+  - url: /api
+    description: API 基础路径
+
+paths:
+  /notifications/settings:
+    get:
+      summary: 获取用户通知设置
+      description: 获取当前用户的通知配置信息
+      tags:
+        - 通知设置
+      responses:
+        '200':
+          description: 成功获取通知设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/NotificationSettings'
+              examples:
+                success:
+                  value:
+                    settings:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      pushplusToken: "abc123def456"
+                      pushplusEnabled: true
+                      tokenStatus: "valid"
+                      createdAt: "2025-07-03T10:00:00Z"
+                      updatedAt: "2025-07-03T12:00:00Z"
+                not_configured:
+                  value:
+                    settings:
+                      id: "550e8400-e29b-41d4-a716-446655440001"
+                      pushplusToken: null
+                      pushplusEnabled: false
+                      tokenStatus: "valid"
+                      createdAt: "2025-07-03T10:00:00Z"
+                      updatedAt: "2025-07-03T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      summary: 更新用户通知设置
+      description: 更新用户的通知配置，如果Token有变化会自动验证有效性
+      tags:
+        - 通知设置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdateRequest'
+            examples:
+              enable_pushplus:
+                summary: 启用PushPlus通知
+                value:
+                  pushplusToken: "new_token_abc123"
+                  pushplusEnabled: true
+              disable_pushplus:
+                summary: 禁用PushPlus通知
+                value:
+                  pushplusToken: "existing_token"
+                  pushplusEnabled: false
+              clear_token:
+                summary: 清除Token
+                value:
+                  pushplusToken: null
+                  pushplusEnabled: false
+      responses:
+        '200':
+          description: 成功更新通知设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/NotificationSettings'
+              examples:
+                success:
+                  value:
+                    settings:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      pushplusToken: "new_token_abc123"
+                      pushplusEnabled: true
+                      tokenStatus: "valid"
+                      createdAt: "2025-07-03T10:00:00Z"
+                      updatedAt: "2025-07-03T15:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /notifications/validate:
+    get:
+      summary: 验证用户通知配置
+      description: 检查当前用户的通知配置是否完整，用于其他模块判断是否可以启用通知功能
+      tags:
+        - 通知验证
+      responses:
+        '200':
+          description: 配置验证结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  validation:
+                    $ref: '#/components/schemas/NotificationConfigValidation'
+              examples:
+                valid_config:
+                  summary: 配置完整
+                  value:
+                    validation:
+                      isValid: true
+                      availableChannels: ["pushplus"]
+                      missingConfigs: []
+                invalid_config:
+                  summary: 配置不完整
+                  value:
+                    validation:
+                      isValid: false
+                      availableChannels: []
+                      missingConfigs: ["PushPlus Token"]
+                token_invalid:
+                  summary: Token无效
+                  value:
+                    validation:
+                      isValid: false
+                      availableChannels: []
+                      missingConfigs: ["有效的PushPlus Token"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    NotificationSettings:
+      type: object
+      required:
+        - id
+        - pushplusEnabled
+        - tokenStatus
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 设置记录唯一标识
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        pushplusToken:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: PushPlus Token，为空表示未配置
+          example: "abc123def456"
+        pushplusEnabled:
+          type: boolean
+          description: 是否启用PushPlus通知
+          example: true
+        tokenStatus:
+          type: string
+          enum: [valid, invalid, expired]
+          description: Token状态
+          example: "valid"
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2025-07-03T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: "2025-07-03T12:00:00Z"
+
+    NotificationSettingsUpdateRequest:
+      type: object
+      properties:
+        pushplusToken:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: PushPlus Token，设为null表示清除Token
+          example: "new_token_abc123"
+        pushplusEnabled:
+          type: boolean
+          description: 是否启用PushPlus通知
+          example: true
+
+    NotificationConfigValidation:
+      type: object
+      required:
+        - isValid
+        - availableChannels
+        - missingConfigs
+      properties:
+        isValid:
+          type: boolean
+          description: 配置是否完整有效
+          example: true
+        availableChannels:
+          type: array
+          items:
+            type: string
+            enum: [pushplus]
+          description: 可用的通知渠道列表
+          example: ["pushplus"]
+        missingConfigs:
+          type: array
+          items:
+            type: string
+          description: 缺失的配置项列表
+          example: []
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 内部错误类型
+          enum:
+            - SETTINGS_NOT_FOUND
+            - INVALID_TOKEN
+            - INVALID_REQUEST
+            - INTERNAL_ERROR
+            - UNAUTHORIZED
+          example: INVALID_TOKEN
+        message:
+          type: string
+          description: 用户友好的错误信息
+          example: "PushPlus Token无效，请检查Token是否正确"
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidToken:
+              summary: Token无效
+              value:
+                error: "INVALID_TOKEN"
+                message: "PushPlus Token无效，请检查Token是否正确"
+            invalidRequest:
+              summary: 参数错误
+              value:
+                error: "INVALID_REQUEST"
+                message: "请求参数不符合要求"
+
+    Unauthorized:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "UNAUTHORIZED"
+            message: "请先登录"
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "服务暂时不可用，请稍后重试"
+
+tags:
+  - name: 通知设置
+    description: 用户通知配置管理相关接口
+  - name: 通知验证
+    description: 通知配置验证相关接口
