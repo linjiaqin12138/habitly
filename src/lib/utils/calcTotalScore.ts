@@ -16,3 +16,45 @@ export function calculateTotalScore(questions: Question[]): number {
     });
     return totalScore;
   };
+
+export function calculateCurrentScore(
+  questions: Question[], 
+  answers: Record<string, string | string[] | number>
+): number {
+  let totalScore = 0;
+  
+  questions.forEach((question) => {
+    const answer = answers[question.id];
+    if (!answer) return;
+
+    switch (question.type) {
+      case 'single':
+        const selectedOption = question.options?.find(opt => opt.id === answer);
+        if (selectedOption) {
+          totalScore += selectedOption.score;
+        }
+        break;
+      case 'multiple':
+        if (Array.isArray(answer)) {
+          answer.forEach(optionId => {
+            const option = question.options?.find(opt => opt.id === optionId);
+            if (option) {
+              totalScore += option.score;
+            }
+          });
+        }
+        break;
+      case 'score':
+        totalScore += Number(answer) || 0;
+        break;
+      case 'text':
+        // 文本题默认5分（如果有答案）
+        if (answer && typeof answer === 'string' && answer.trim()) {
+          totalScore += 5;
+        }
+        break;
+    }
+  });
+
+  return totalScore;
+}

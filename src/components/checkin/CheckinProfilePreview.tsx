@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { CheckinProfileForm } from "./types";
-import { calculateTotalScore } from "@/lib/utils/calcTotalScore";
+import { calculateTotalScore, calculateCurrentScore } from "@/lib/utils/calcTotalScore";
+import { QuestionRenderer } from "./QuestionRenderer";
 
 interface CheckinProfilePreviewProps {
   checkinProfile: CheckinProfileForm;
@@ -14,49 +12,6 @@ interface CheckinProfilePreviewProps {
 
 export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewProps) {
   const [currentAnswer, setCurrentAnswer] = useState<Record<string, string | string[] | number>>({});
-
-  // 计算当前分数
-  const calculateCurrentScore = (): number => {
-    let totalScore = 0;
-
-    checkinProfile.questionnaire.questions.forEach((question) => {
-      const answer = currentAnswer[question.id];
-
-      if (!answer) return;
-
-      switch (question.type) {
-        case "single":
-          const selectedOption = question.options?.find(option => option.id === answer);
-          if (selectedOption) {
-            totalScore += selectedOption.score;
-          }
-          break;
-
-        case "multiple":
-          if (Array.isArray(answer)) {
-            answer.forEach((optionId) => {
-              const option = question.options?.find(opt => opt.id === optionId);
-              if (option) {
-                totalScore += option.score;
-              }
-            });
-          }
-          break;
-
-        case "text":
-          if (answer && typeof answer === "string" && answer.trim()) {
-            totalScore += 5; // 填空题默认5分
-          }
-          break;
-
-        case "score":
-          totalScore += Number(answer) || 0;
-          break;
-      }
-    });
-
-    return totalScore;
-  };
 
   const handleAnswerChange = (questionId: string, value: string | string[] | number) => {
     setCurrentAnswer((prev) => ({
@@ -92,7 +47,7 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">当前分数</CardTitle>
               <div className="text-2xl font-bold text-primary">
-                {calculateCurrentScore()}/{calculateTotalScore(checkinProfile.questionnaire.questions)}
+                {calculateCurrentScore(checkinProfile.questionnaire.questions, currentAnswer)}/{calculateTotalScore(checkinProfile.questionnaire.questions)}
               </div>
             </div>
             {/* 奖励规则显示 */}
@@ -103,7 +58,7 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
                   {checkinProfile.rewardRules
                     .sort((a, b) => a.threshold - b.threshold)
                     .map((rule, index) => {
-                      const currentScore = calculateCurrentScore();
+                      const currentScore = calculateCurrentScore(checkinProfile.questionnaire.questions, currentAnswer);
                       const isAchieved = currentScore >= rule.threshold;
                       return (
                         <Badge
@@ -123,76 +78,15 @@ export function CheckinProfilePreview({ checkinProfile }: CheckinProfilePreviewP
         </Card>
 
         {checkinProfile.questionnaire.questions.map((question, index) => (
-          <div key={question.id} className="space-y-2">
-            <Label>
-              {index + 1}. {question.title}
-              {question.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-
-            {question.type === "single" && (
-              <div className="space-y-2">
-                {question.options?.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name={question.id}
-                      value={option.id}
-                      checked={currentAnswer[question.id] === option.id}
-                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    />
-                    <span>{option.text}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {question.type === "multiple" && (
-              <div className="space-y-2">
-                {question.options?.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      value={option.id}
-                      checked={Array.isArray(currentAnswer[question.id]) && (currentAnswer[question.id] as string[]).includes(option.id)}
-                      onChange={(e) => {
-                        const current = Array.isArray(currentAnswer[question.id]) ? currentAnswer[question.id] as string[] : [];
-                        const value = e.target.value;
-                        handleAnswerChange(
-                          question.id,
-                          current.includes(value)
-                            ? current.filter((v: string) => v !== value)
-                            : [...current, value]
-                        );
-                      }}
-                    />
-                    <span>{option.text}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {question.type === "text" && (
-              <Textarea
-                value={currentAnswer[question.id] || ""}
-                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                placeholder="请输入..."
-              />
-            )}
-
-            {question.type === "score" && (
-              <div className="space-y-2">
-                <Slider
-                  value={[Number(currentAnswer[question.id]) || 0]}
-                  onValueChange={(value) => handleAnswerChange(question.id, value[0])}
-                  max={question.maxScore}
-                  step={1}
-                />
-                <div className="text-sm text-muted-foreground text-right">
-                  {Number(currentAnswer[question.id]) || 0} / {question.maxScore}
-                </div>
-              </div>
-            )}
-          </div>
+          <QuestionRenderer
+            key={question.id}
+            question={question}
+            index={index}
+            answer={currentAnswer[question.id]}
+            onAnswerChange={handleAnswerChange}
+            isPreview={true}
+            showScores={false}
+          />
         ))}
 
         <div className="flex justify-end space-x-2 mt-6">
