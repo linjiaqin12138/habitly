@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CheckinProfile, CheckinRecord } from '@/types/checkin';
 import { ProfileOption } from './types';
 import { getDateStatus, getRecordsForDate } from './utils';
+import { getLocalDateString } from '@/lib/utils/dateUtils';
 
 interface CalendarCardProps {
     profiles: CheckinProfile[];
@@ -36,7 +37,7 @@ export default function CalendarCard({
         if (date && selectedProfile !== "all") {
             const dateStatus = getDateStatus(date, profiles, records, selectedProfile);
             if (dateStatus === 'canMakeup') {
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(date); // 修复：使用本地日期
                 router.push(`/checkin/makeup/${selectedProfile}?date=${dateStr}`);
             }
         }

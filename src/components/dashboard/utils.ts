@@ -1,10 +1,11 @@
 import { CheckinProfile, CheckinRecord, CheckinFrequency } from '@/types/checkin';
 import { ProfileStats } from './types';
+import { getLocalDateString, getLocalYearMonthString } from '@/lib/utils/dateUtils';
 
 // 计算打卡统计数据
 export const calculateProfileStats = (profiles: CheckinProfile[], records: CheckinRecord[]): ProfileStats[] => {
-    const today = new Date().toISOString().split('T')[0];
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const today = getLocalDateString(); // 修复：使用本地日期
+    const currentMonth = getLocalYearMonthString(); // 修复：使用本地年月
 
     return profiles.map(profile => {
         const profileRecords = records.filter(r => r.profileId === profile.id);
@@ -55,7 +56,7 @@ export const shouldCheckinOnDate = (frequency: CheckinFrequency, date: Date): bo
             const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ...
             return frequency.weeklyDays?.includes(dayOfWeek) ?? false;
         case 'custom':
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(date); // 修复：使用本地日期
             return frequency.customDates?.includes(dateStr) ?? false;
         default:
             return false;
@@ -71,7 +72,7 @@ export const calculateExpectedCheckinDays = (frequency: CheckinFrequency, daysIn
             // 简化计算：假设一个月大约4周
             return (frequency.weeklyDays?.length ?? 0) * Math.ceil(daysInMonth / 7);
         case 'custom':
-            const currentMonth = new Date().toISOString().slice(0, 7);
+            const currentMonth = getLocalYearMonthString(); // 修复：使用本地年月
             return frequency.customDates?.filter(date => date.startsWith(currentMonth)).length ?? 0;
         default:
             return 0;
@@ -90,7 +91,7 @@ export const calculateStreak = (frequency: CheckinFrequency, records: CheckinRec
 
     // 从今天往前检查
     for (let i = 0; i < 30; i++) { // 最多检查30天
-        const dateStr = currentDate.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(currentDate); // 修复：使用本地日期
 
         if (shouldCheckinOnDate(frequency, currentDate)) {
             const hasRecord = sortedRecords.some(r => r.checkinDate === dateStr);
@@ -112,7 +113,7 @@ export const generateTrendData = (profiles: CheckinProfile[], records: CheckinRe
     const dates = Array.from({ length: 30 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - 29 + i);
-        return date.toISOString().split('T')[0];
+        return getLocalDateString(date); // 修复：使用本地日期
     });
 
     return dates.map(date => {
@@ -140,7 +141,7 @@ export const getDateStatus = (
     records: CheckinRecord[], 
     selectedProfile: string
 ): 'onTime' | 'remedial' | 'canMakeup' | 'missed' | 'none' => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date); // 修复：使用本地日期
 
     // 获取该日期的记录
     let dateRecords: CheckinRecord[] = [];
@@ -194,7 +195,7 @@ export const getDateStatus = (
 
 // 获取指定日期的打卡记录
 export const getRecordsForDate = (date: Date, profiles: CheckinProfile[], records: CheckinRecord[]) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date); // 修复：使用本地日期
 
     const dateRecords = records.filter(record => record.checkinDate === dateStr);
     return dateRecords.map(record => {

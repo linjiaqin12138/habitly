@@ -26,6 +26,7 @@ import {
 } from '../../types/checkin';
 import { AppError, GeneralErrorCode } from '@/types/error';
 import { getLogger } from '../logger';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const logger = getLogger('checkinService');
 
@@ -183,7 +184,7 @@ export async function submitCheckin(userId: string, request: CheckinSubmitReques
   }
   logger.trace('profile: ', profile);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString(); // 修复：使用本地日期
 
   // 验证是否应该在今天打卡
   if (!shouldCheckinOnDate(profile.frequency, new Date())) {
@@ -367,7 +368,7 @@ export async function getMissingDates(userId: string, profileId: string, days: n
     
     // 检查该日期是否应该打卡
     if (shouldCheckinOnDate(profile.frequency, date)) {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(date); // 修复：使用本地日期
       
       // 检查是否已经有打卡记录
       const existingRecord = await getCheckinRecord(userId, profileId, dateStr);
@@ -405,7 +406,7 @@ function shouldCheckinOnDate(frequency: CheckinFrequency, date: Date): boolean {
       return frequency.weeklyDays?.includes(dayOfWeek) || false;
       
     case 'custom':
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(date); // 修复：使用本地日期
       return frequency.customDates?.includes(dateStr) || false;
       
     default:
