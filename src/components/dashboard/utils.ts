@@ -1,5 +1,5 @@
 import { CheckinProfile, CheckinRecord, CheckinFrequency } from '@/types/checkin';
-import { ProfileStats } from './types';
+import { ProfileStats, TodayStatus } from './types';
 import { getLocalDateString, getLocalYearMonthString } from '@/lib/utils/dateUtils';
 
 // 计算打卡统计数据
@@ -14,15 +14,17 @@ export const calculateProfileStats = (profiles: CheckinProfile[], records: Check
         const todayRecord = profileRecords.find(r => r.checkinDate === today);
         const shouldCheckinToday = shouldCheckinOnDate(profile.frequency, new Date());
 
-        let todayStatus: '未打卡' | '已完成' | '不需要';
-        if (!shouldCheckinToday) {
-            todayStatus = '不需要';
-        } else if (todayRecord) {
-            todayStatus = '已完成';
-        } else {
-            todayStatus = '未打卡';
+        let todayStatus: TodayStatus | undefined;
+        if (profile.isActive) {
+            if (!shouldCheckinToday) {
+                todayStatus = TodayStatus.NOT_REQUIRED;
+            } else if (todayRecord) {
+                todayStatus = TodayStatus.COMPLETED;
+            } else {
+                todayStatus = TodayStatus.NOT_CHECKED;
+            }
         }
-
+        
         // 本月记录
         const monthlyRecords = profileRecords.filter(r => r.checkinDate.startsWith(currentMonth));
 
@@ -42,7 +44,8 @@ export const calculateProfileStats = (profiles: CheckinProfile[], records: Check
             todayStatus,
             monthlyCompletionRate,
             monthlyCompleted: monthlyRecords.length,
-            streak
+            streak,
+            isActive: profile.isActive
         };
     });
 };

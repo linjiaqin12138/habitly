@@ -146,6 +146,7 @@ export default function DashboardPage() {
                         profileStats={profileStats}
                         onCreateNew={handleCreateNew}
                         onCheckin={handleCheckin}
+                        onManage={() => router.push('/checkin/list')}
                     />
                     
                     <VaultSummaryCard

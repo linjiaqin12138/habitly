@@ -671,6 +671,9 @@ components:
         description:
           type: string
           description: 打卡描述
+        isActive:
+          type: boolean
+          description: 是否启用打卡配置
         frequency:
           $ref: '#/components/schemas/CheckinFrequency'
         reminderTime:

@@ -98,6 +98,7 @@ export interface CheckinProfileUpdateRequest {
   frequency?: CheckinFrequency;
   reminderTime?: string;
   rewardRules?: CheckinRewardRule[];
+  isActive?: boolean;
   questionnaire?: {
     title?: string;
     description?: string;

@@ -8,13 +8,20 @@ export interface DashboardData {
     transactions: VaultTransaction[];
 }
 
+export enum TodayStatus {
+    NOT_CHECKED = 'NOT_CHECKED',
+    COMPLETED = 'COMPLETED',
+    NOT_REQUIRED = 'NOT_REQUIRED'
+}
+
 export interface ProfileStats {
     id: string;
     title: string;
-    todayStatus: '未打卡' | '已完成' | '不需要';
+    todayStatus?: TodayStatus;
     monthlyCompletionRate: number;
     monthlyCompleted: number;
     streak: number;
+    isActive: boolean;
 }
 
 export interface ProfileOption {

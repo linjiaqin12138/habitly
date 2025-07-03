@@ -37,7 +37,6 @@ export async function getCheckinProfiles(userId: string): Promise<CheckinProfile
     .from('checkin_profiles')
     .select('*')
     .eq('user_id', userId)
-    .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -126,7 +125,8 @@ export async function updateCheckinProfile(userId: string, id: string, request: 
     description: request.description,
     frequency: request.frequency,
     reminderTime: request.reminderTime,
-    rewardRules: request.rewardRules
+    rewardRules: request.rewardRules,
+    isActive: request.isActive
   });
 
   const supabase = await createClient();

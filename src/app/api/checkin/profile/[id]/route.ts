@@ -4,6 +4,9 @@ import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
+import { getLogger } from '@/lib/logger';
+
+const logger = getLogger('api.checkin.profile');
 
 const QuestionSchema = z.object({
   id: z.string(),
@@ -32,6 +35,7 @@ const CheckinRewardRuleSchema = z.object({
 const UpdateCheckinProfileSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
+  isActive: z.boolean().optional(),
   frequency: CheckinFrequencySchema.optional(),
   reminderTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
   rewardRules: z.array(CheckinRewardRuleSchema).optional(),

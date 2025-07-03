@@ -38,10 +38,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getCheckinProfiles, deleteCheckinProfile } from "@/lib/api/checkinApi";
+import { getCheckinProfiles, deleteCheckinProfile, updateCheckinProfile } from "@/lib/api/checkinApi";
 import { CheckinProfile } from "@/types/checkin";
 import PageLoading from "@/components/pageload";
-
 
 export default function CheckinListPage() {
   const router = useRouter();
@@ -51,6 +50,7 @@ export default function CheckinListPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CheckinProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState<boolean>(false);
   // const [_, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,6 +110,21 @@ export default function CheckinListPage() {
       toast.error(errorMessage);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleToggleStatus = async (profile: CheckinProfile) => {
+    setToggling(true);
+    try {
+      await updateCheckinProfile(profile.id, { isActive: !profile.isActive }  )
+      toast.success(`打卡配置已${profile.isActive ? '停用' : '启用'}`);
+      // 重新加载列表
+      await loadProfiles();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '更新打卡配置状态失败';
+      toast.error(errorMessage);
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -229,6 +244,7 @@ export default function CheckinListPage() {
                             size="sm"
                             onClick={() => handleCheckin(profile)}
                             className="gap-1"
+                            disabled={!profile.isActive}
                           >
                             <Play className="h-3 w-3" />
                             打卡
@@ -252,6 +268,24 @@ export default function CheckinListPage() {
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 删除
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(profile)}
+                                className={profile.isActive ? 'text-red-600' : 'text-green-600'}
+                              >
+                                {toggling ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : profile.isActive ? (
+                                  <>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    停用
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="mr-2 h-4 w-4" />
+                                    启用
+                                  </>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
