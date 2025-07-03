@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient as createClient } from '@/lib/supabase/admin';
 import {
   createQuestionnaire,
   updateQuestionnaire,
@@ -431,4 +431,171 @@ async function getCheckinRecord(userId: string, profileId: string, date: string)
   }
 
   return dbToApiRecord(data);
+}
+
+// ==================== 定时提醒功能 ====================
+
+import { sendNotification } from './notification';
+
+// 定时提醒任务变量
+let reminderInterval: NodeJS.Timeout | null = null;
+
+/**
+ * 扫描并发送打卡提醒
+ */
+export async function scanAndSendCheckinReminders(): Promise<void> {
+  try {
+    logger.info('开始扫描打卡提醒配置');
+    
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const today = getLocalDateString();
+    
+    // 计算时间窗口（前后15分钟）
+    const windowStart = new Date(now.getTime() - 15 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + 15 * 60 * 1000);
+    const startTime = `${windowStart.getHours().toString().padStart(2, '0')}:${windowStart.getMinutes().toString().padStart(2, '0')}`;
+    const endTime = `${windowEnd.getHours().toString().padStart(2, '0')}:${windowEnd.getMinutes().toString().padStart(2, '0')}`;
+    
+    logger.info(`当前时间: ${currentTime}, 扫描时间窗口: ${startTime} - ${endTime}`);
+    
+    const supabase = await createClient();
+    
+    // 查询符合提醒条件的打卡配置
+    const { data: profiles, error } = await supabase
+      .from('checkin_profiles')
+      .select('*')
+      .eq('is_active', true)
+      .not('reminder_time', 'is', null)
+      .gte('reminder_time', startTime)
+      .lte('reminder_time', endTime);
+    
+    if (error) {
+      logger.error('查询打卡配置失败:', error);
+      return;
+    }
+    
+    if (!profiles || profiles.length === 0) {
+      logger.info('没有找到需要提醒的打卡配置');
+      return;
+    }
+    
+    logger.info(`找到 ${profiles.length} 个需要检查的打卡配置`);
+    
+    // 处理每个配置
+    for (const profileData of profiles) {
+      try {
+        const profile = dbToApiProfile(profileData);
+        await processCheckinReminder(profile, today);
+      } catch (error) {
+        logger.error(`处理打卡配置 ${profileData.id} 的提醒失败:`, error);
+      }
+    }
+    
+    logger.info('打卡提醒扫描完成');
+  } catch (error) {
+    logger.error('扫描打卡提醒失败:', error);
+  }
+}
+
+/**
+ * 处理单个打卡配置的提醒
+ */
+async function processCheckinReminder(profile: CheckinProfile, today: string): Promise<void> {
+  logger.info(`处理打卡配置: ${profile.title} (${profile.id})`);
+  
+  // 1. 检查今天是否应该打卡
+  if (!shouldCheckinOnDate(profile.frequency, new Date())) {
+    logger.info(`今天不是打卡日期，跳过提醒`);
+    return;
+  }
+  
+  // 2. 检查用户今天是否已经打卡
+  const existingRecord = await getCheckinRecord(profile.userId, profile.id, today);
+  if (existingRecord) {
+    logger.info(`用户今天已经打卡，跳过提醒`);
+    return;
+  }
+  
+  // 3. 检查今天是否已经发送过提醒
+  const hasReminderSent = await hasReminderSentToday(profile.userId, profile.id, today);
+  if (hasReminderSent) {
+    logger.info(`今天已经发送过提醒，跳过`);
+    return;
+  }
+  
+  // 4. 发送提醒通知
+  const title = '⏰ 打卡提醒';
+  const content = `别忘了完成今天的【${profile.title}】打卡哦！`;
+  
+  try {
+    await sendNotification(profile.userId, title, content);
+    logger.info(`成功发送打卡提醒给用户 ${profile.userId}`);
+  } catch (error) {
+    logger.error(`发送打卡提醒失败:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 检查今天是否已经发送过提醒
+ */
+async function hasReminderSentToday(userId: string, profileId: string, today: string): Promise<boolean> {
+  const supabase = await createClient();
+  
+  const startOfDay = `${today}T00:00:00Z`;
+  const endOfDay = `${today}T23:59:59Z`;
+  
+  const { data, error } = await supabase
+    .from('notification_logs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('title', '⏰ 打卡提醒')
+    .like('content', `%【%${profileId}%】%`)
+    .gte('sent_at', startOfDay)
+    .lte('sent_at', endOfDay)
+    .eq('status', 'success')
+    .limit(1);
+  
+  if (error) {
+    logger.error('查询提醒发送记录失败:', error);
+    return false; // 查询失败时允许发送，避免遗漏提醒
+  }
+  
+  return data && data.length > 0;
+}
+
+/**
+ * 启动打卡提醒定时任务
+ */
+export function startCheckinReminderService(): void {
+  if (reminderInterval) {
+    logger.info('打卡提醒定时任务已经在运行');
+    return;
+  }
+  
+  logger.info('启动打卡提醒定时任务，每30分钟执行一次');
+  
+  // 立即执行一次
+  scanAndSendCheckinReminders().catch(error => {
+    logger.error('首次执行打卡提醒扫描失败:', error);
+  });
+  
+  // 设置定时任务，每30分钟执行一次
+  reminderInterval = setInterval(() => {
+    scanAndSendCheckinReminders().catch(error => {
+      logger.error('定时打卡提醒扫描失败:', error);
+    });
+  }, 30 * 60 * 1000); // 30分钟 = 30 * 60 * 1000 毫秒
+}
+
+/**
+ * 停止打卡提醒定时任务
+ */
+export function stopCheckinReminderService(): void {
+  if (reminderInterval) {
+    clearInterval(reminderInterval);
+    reminderInterval = null;
+    logger.info('打卡提醒定时任务已停止');
+  }
 }

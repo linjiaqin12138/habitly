@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
-import { Menu, LogOut, Home, Vault } from 'lucide-react'
+import { Menu, LogOut, Home, Vault, Bell } from 'lucide-react'
 
 export function Navbar() {
   const { isAuthenticated, loading } = useAuth()
@@ -81,6 +81,12 @@ export function Navbar() {
                 >
                   小金库
                 </Link>
+                <Link 
+                  href="/settings/notifications" 
+                  className="transition-colors hover:text-foreground/80 text-foreground/60"
+                >
+                  通知设置
+                </Link>
                 <Button variant="ghost" onClick={handleLogout}>
                   退出登录
                 </Button>
@@ -127,6 +133,14 @@ export function Navbar() {
                     >
                       <Vault className="h-5 w-5" />
                       <span>小金库</span>
+                    </Link>
+                    <Link 
+                      href="/settings/notifications" 
+                      onClick={closeMenu}
+                      className="flex items-center space-x-2 text-lg hover:text-primary transition-colors"
+                    >
+                      <Bell className="h-5 w-5" />
+                      <span>通知设置</span>
                     </Link>
                     <button 
                       onClick={handleLogout}
