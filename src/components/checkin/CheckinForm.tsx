@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Clock, Trophy } from "lucide-react";
 import { CheckinProfile } from "@/types/checkin";
-import { Questionnaire, Question } from "@/types/questionnaire";
+import { Questionnaire } from "@/types/questionnaire";
 import { QuestionRenderer } from "./QuestionRenderer";
 import { calculateCurrentScore } from "@/lib/utils/calcTotalScore";
 

@@ -4,9 +4,6 @@ import * as checkinService from '@/lib/services/checkinService';
 import { withAuth } from '@/lib/utils/withAuth';
 import { withErrorHandling } from '@/lib/utils/withErrorHandling';
 import { AppError, GeneralErrorCode, CheckinErrorCode } from '@/types/error';
-import { getLogger } from '@/lib/logger';
-
-const logger = getLogger('api.checkin.profile');
 
 const QuestionSchema = z.object({
   id: z.string(),

@@ -24,7 +24,7 @@ export interface NotificationLogsDB {
   retry_count: number
   error_message: string | null
   sent_at: string
-  response_data: Record<string, any> | null
+  response_data: Record<string, unknown> | null
 }
 
 // ==================== 业务模型类型 (camelCase) ====================
@@ -51,7 +51,7 @@ export interface NotificationLog {
   retryCount: number
   errorMessage: string | null
   sentAt: string
-  responseData: Record<string, any> | null
+  responseData: Record<string, unknown> | null
 }
 
 // ==================== 枚举类型 ====================
@@ -94,7 +94,8 @@ export interface NotificationConfigValidation {
 export interface PushPlusResponse {
   code: number
   msg: string
-  data?: any
+  data?: unknown
+  [key: string]: unknown
 }
 
 // ==================== 类型转换函数 ====================

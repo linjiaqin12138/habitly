@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { 
   UserNotificationSettingsDB, 
-  NotificationLogsDB,
   NotificationSettings,
   NotificationConfigValidation,
   NotificationChannel,
-  NotificationStatus,
-  TokenStatus,
   PushPlusResponse,
   dbToNotificationSettings,
   NotificationSettingsUpdateRequest
@@ -187,7 +184,7 @@ export async function updateUserNotificationSettings(
   }
 
   // 准备更新数据
-  const dbUpdateData: any = {
+  const dbUpdateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
     token_status: tokenStatus
   }
@@ -289,7 +286,7 @@ async function logNotification(
   status: string,
   retryCount: number,
   errorMessage?: string | null,
-  responseData?: Record<string, any> | null
+  responseData?: Record<string, unknown> | null
 ): Promise<void> {
   try {
     const supabase = await createClient()
