@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Question } from "@/types/questionnaire";
+import { v4 as uuidv4 } from "uuid";
 
 interface QuestionEditorProps {
   questions: Question[];
@@ -57,7 +58,7 @@ export function QuestionEditor({ questions, onChange }: QuestionEditorProps) {
   const handleAddOption = (questionIndex: number) => {
     const question = questions[questionIndex];
     const newOption = {
-      id: `o${(question.options?.length || 0) + 1}`,
+      id: uuidv4(),
       text: `选项${(question.options?.length || 0) + 1}`,
       score: 0,
     };
@@ -81,8 +82,9 @@ export function QuestionEditor({ questions, onChange }: QuestionEditorProps) {
   };
 
   const handleAddQuestion = () => {
+
     const newQuestion: Question = {
-      id: `q${questions.length + 1}`,
+      id: uuidv4(),
       type: "single",
       title: "新问题",
       required: true,
